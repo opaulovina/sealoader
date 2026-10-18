@@ -1,6 +1,6 @@
 # Sealoader
 
-Baixa vídeos do **YouTube, TikTok, Instagram, X (Twitter), Telegram, TokyVideo** (e mais 1.800 sites suportados pelo [yt-dlp](https://github.com/yt-dlp/yt-dlp)) em vários formatos, e gera **QR codes estáticos** (que nunca expiram) com personalização: cores, degradê, formato dos pontos e imagem no centro.
+Baixa vídeos do **YouTube, TikTok, Instagram, X (Twitter), Telegram, TokyVideo, VK Video** (e mais 1.800 sites suportados pelo [yt-dlp](https://github.com/yt-dlp/yt-dlp)) em vários formatos, e gera **QR codes estáticos** (que nunca expiram) com personalização: cores, degradê, formato dos pontos e imagem no centro.
 
 O visual reproduz o estilo do arquivo [Google Sea Glass](https://www.figma.com/community/file/1691510784131240473/google-sea-glass) do Figma (Julian, CC BY 4.0): pílulas pastel grossas, com granulado leve, borda interna clara e sombra suave embaixo.
 
@@ -53,7 +53,7 @@ O visual reproduz o estilo do arquivo [Google Sea Glass](https://www.figma.com/c
 ```
 
 - **iPhone:** o Safari não deixa rodar um baixador local, então baixar vídeo sempre passa pelo servidor. O QR code funciona sempre.
-- **Android:** o APK leva a interface embutida e usa o servidor para baixar. Ele também aparece em **Compartilhar** no YouTube, Instagram, TikTok etc.: é só tocar em Compartilhar → Sealoader.
+- **Android:** o site instalado como app (PWA: Chrome → ⋮ → Instalar app; o botão "Celular" do rodapé faz isso com um toque). Ele aparece em **Compartilhar** no YouTube, Instagram, TikTok etc. (`share_target` no `manifest.webmanifest`). Também existe um APK (`android/`, publicado em cada release como `Sealoader-Android.apk`) que faz o mesmo, mas não é mais divulgado no site.
 - **Windows / Mac / Linux:** app 100% independente, com yt-dlp, ffmpeg e deno embutidos. O yt-dlp se atualiza sozinho uma vez por dia (fica em `yt-dlp.zip` na pasta de dados do app).
 
 ## Quem usa o quê
@@ -63,7 +63,7 @@ O visual reproduz o estilo do arquivo [Google Sea Glass](https://www.figma.com/c
 | Paulo (Linux) | menu → Sealoader (servidor da casa) ou o AppImage | não (é o próprio servidor) |
 | Namorada (Mac) | app `.dmg` | **não** |
 | Mãe (Windows) | instalador `.exe` | **não** |
-| Android | APK, ou o site | sim, para baixar vídeo |
+| Android | site instalado como app (Chrome → Instalar app) | sim, para baixar vídeo |
 | iPhone | site no Safari → "Adicionar à Tela de Início" | sim, para baixar vídeo |
 
 ## Estrutura do repositório
@@ -175,9 +175,9 @@ cd android && ./gradlew assembleRelease            # → android/app/build/outpu
 O app não é assinado por Apple ou Microsoft (isso custa US$99/ano na Apple e mais ainda na Microsoft), então na primeira vez o sistema pergunta se você confia:
 
 - **Windows:** baixe `Sealoader-Windows-Setup.exe`. Se aparecer "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**. O app aparece no Menu Iniciar e na Área de Trabalho.
-- **Mac:** baixe o `.dmg` certo (**Apple Silicon** para Macs M1/M2/M3/M4, de 2020 em diante; **Intel** para os mais antigos; veja em  → Sobre Este Mac). Arraste o Sealoader para Aplicativos. Na primeira vez que abrir, se o Mac bloquear: **Ajustes do Sistema → Privacidade e Segurança → role até o fim → "Abrir Mesmo Assim"**. Depois disso abre normal.
+- **Mac:** no site, toque em **Mac** e escolha **Chip Apple** (M1/M2/M3/M4, de 2020 em diante) ou **Intel** (veja no menu da maçã → Sobre Este Mac). Arraste o Sealoader para Aplicativos. Na primeira vez que abrir, se o Mac bloquear: **Ajustes do Sistema → Privacidade e Segurança → role até o fim → "Abrir Mesmo Assim"**. Depois disso abre normal.
 - **Linux:** baixe o `.AppImage`, dê permissão (`chmod +x Sealoader-Linux-x86_64.AppImage`, ou botão direito → Propriedades → "Permitir executar") e abra.
-- **Android:** baixe `Sealoader-Android.apk` no celular e abra. O Android pede para **permitir instalar de fontes desconhecidas** para o navegador. Depois, em qualquer app, toque em **Compartilhar → Sealoader**.
+- **Android:** abra o site no **Chrome** e toque em **Celular → Instalar o Sealoader** (ou menu ⋮ → Instalar app). Depois, em qualquer app, toque em **Compartilhar → Sealoader**.
 - **iPhone:** abra o site no **Safari** → botão Compartilhar → **Adicionar à Tela de Início**.
 
 Os apps de desktop abrem no navegador padrão e fecham sozinhos uns 4 minutos depois que a aba é fechada (se não houver download em andamento). Os arquivos baixados vão para a pasta Downloads do navegador. No Android vão para `Downloads/Sealoader`, e os QR codes vão para a galeria (`Imagens/Sealoader`).

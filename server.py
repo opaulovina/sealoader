@@ -351,9 +351,17 @@ def first_entry(info):
     return info
 
 
+def json_body():
+    # silent + no force: a cross-site text/plain POST (no CORS preflight) gets nothing
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        abort(415)
+    return data
+
+
 @app.post('/api/info')
 def api_info():
-    data = request.get_json(force=True)
+    data = json_body()
     url = (data.get('url') or '').strip()
     if not re.match(r'^https?://', url):
         return jsonify(error='Cole um link válido (começando com http:// ou https://)'), 400
@@ -369,6 +377,8 @@ def build_format(data):
     kind = data.get('kind', 'video')
     opts = {}
     if kind == 'raw':
+        if not data.get('format_id'):
+            raise ValueError('Escolha um formato na lista')
         opts['format'] = data['format_id']
         return opts
     if kind == 'audio':
@@ -422,16 +432,16 @@ def run_job(job_id, data):
                      'VideoRemuxer': 'Ajustando contêiner', 'Metadata': 'Gravando metadados'}
             job.update(stage='process', label=names.get(d.get('postprocessor'), 'Processando'))
 
-    opts = base_opts(data.get('cookies'))
-    opts.update(build_format(data))
-    opts.update({
-        'outtmpl': os.path.join(outdir, '%(title).120B [%(id)s].%(ext)s'),
-        'progress_hooks': [hook],
-        'postprocessor_hooks': [pp_hook],
-        'concurrent_fragment_downloads': 8,
-        'windowsfilenames': True,
-    })
     try:
+        opts = base_opts(data.get('cookies'))
+        opts.update(build_format(data))
+        opts.update({
+            'outtmpl': os.path.join(outdir, '%(title).120B [%(id)s].%(ext)s'),
+            'progress_hooks': [hook],
+            'postprocessor_hooks': [pp_hook],
+            'concurrent_fragment_downloads': 8,
+            'windowsfilenames': True,
+        })
         with make_ydl(opts) as ydl:
             ydl.download([data['url']])
         files = [f for f in glob.glob(os.path.join(outdir, '*')) if not f.endswith(('.part', '.ytdl'))]
@@ -446,7 +456,7 @@ def run_job(job_id, data):
 
 @app.post('/api/download')
 def api_download():
-    data = request.get_json(force=True)
+    data = json_body()
     if not re.match(r'^https?://', data.get('url') or ''):
         return jsonify(error='Link inválido'), 400
     job_id = uuid.uuid4().hex[:12]
@@ -511,7 +521,18 @@ def static_files(name):
 
 
 # ---------------------------------------------------------------- background work
+def clean_old_jobs():
+    cutoff = time.time() - 3 * 3600
+    for d in glob.glob(os.path.join(WORK, '*')):
+        try:
+            if os.path.getmtime(d) < cutoff:
+                shutil.rmtree(d, ignore_errors=True)
+        except OSError:
+            pass
+
+
 def janitor():
+    clean_old_jobs()
     while True:
         time.sleep(600)
         cutoff = time.time() - 3 * 3600

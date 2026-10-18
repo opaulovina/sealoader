@@ -151,9 +151,16 @@ section[hidden]{display:none}
 .hist .s{font-size:13px;opacity:.7;white-space:nowrap}
 
 /* ---------- QR ---------- */
-.qrtype-wrap{display:flex;justify-content:safe center;margin:0 -20px 40px;padding:0 20px 22px;overflow-x:auto;scrollbar-width:none}
-.qrtype-wrap::-webkit-scrollbar{display:none}
-#qrType{flex-wrap:nowrap;flex:none}
+.qrtype{position:relative;margin-bottom:26px;z-index:10}
+.qrtype-btn{border:0;border-radius:999px;padding:14px 18px 14px 22px;display:inline-flex;align-items:center;gap:10px;font-size:18px;font-weight:600;cursor:pointer}
+.qrtype-btn .ms{font-size:22px}
+.qrtype-btn .chev{margin-left:6px;transition:transform .25s}
+.qrtype-btn[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.qrtype-menu{position:absolute;top:calc(100% + 12px);left:0;min-width:230px;border-radius:28px;padding:8px;display:flex;flex-direction:column;gap:2px}
+.qrtype-menu button{border:0;background:transparent;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:999px;font-size:16px;font-weight:500;cursor:pointer;text-align:left;color:inherit}
+.qrtype-menu button .ms{font-size:21px;color:var(--pink-ink)}
+.qrtype-menu button:hover{background:rgba(255,255,255,.6)}
+.qrtype-menu button[aria-pressed="true"]{background:rgba(230,176,248,.35);color:var(--pink-ink);font-weight:600}
 #eccSeg{display:grid;grid-template-columns:repeat(4,1fr);width:100%}
 #eccSeg button{padding:9px 4px;justify-content:center;min-width:0;font-size:15px}
 .qrbox.empty>*{opacity:.18;filter:blur(1px)}
@@ -237,8 +244,12 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 .app-links .chip .ms{font-size:20px}
 .credit{margin:40px 0 0;font-size:12px;color:var(--ink-3);text-align:center}
 .credit a{color:inherit}
+.apps-more{margin-top:20px;width:min(520px,100%);border-radius:30px;padding:20px 22px;text-align:center}
+.apps-more p{margin:0 0 12px;color:var(--ink-2);font-size:15px;line-height:1.5}
+.apps-more p.small{font-size:13px;color:var(--ink-3);margin:6px 0 0}
+.apps-more .app-links{margin-top:4px}
 .apps-note{max-width:460px;text-align:center;color:var(--ink-2);font-size:15px;line-height:1.5;margin:22px 0 0}
-body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-links,body.is-android .apps>.label{display:none}
+body.is-desktop .apps>.app-links,body.is-desktop .apps>.label,body.is-android .apps>.app-links,body.is-android .apps>.label,body.is-installed .apps>.app-links,body.is-installed .apps>.label{display:none}
 .veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:flex-start;padding:max(16px,12vh) 16px 16px;overflow-y:auto}
 .login{width:min(460px,100%);border-radius:40px;padding:30px 24px 18px;text-align:center}
 .login-ico{width:72px;height:72px;filter:drop-shadow(0 8px 6px rgba(70,66,80,.16))}
@@ -262,13 +273,8 @@ body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-lin
   .login .bar input{font-size:17px}
   .login .go{width:48px!important;height:48px!important}
   .veil{padding-top:max(16px,6vh)}
-  .qrtype-wrap{margin:0 0 30px!important;padding:0!important;overflow:visible!important}
-  #qrType{display:grid;grid-template-columns:repeat(3,1fr);width:100%;border-radius:28px}
-  #qrType button{justify-content:center;padding:10px 4px;font-size:15px;gap:5px}
-  #qrType button .ms{font-size:18px}
   .custom{padding:20px 16px;border-radius:32px}
   .range{grid-template-columns:76px minmax(0,1fr) 36px;gap:10px}
-  .qrtype-wrap{justify-content:flex-start;margin:0 -16px 30px;padding:0 16px 20px}
   .wrap{padding:28px 16px 80px}
   header{gap:26px}
   .orb{width:68px;height:68px}.orb svg{width:42px;height:42px}
@@ -384,19 +390,21 @@ body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-lin
 
     <!-- ================= QR CODE ================= -->
     <section id="tab-qr" hidden>
-      <div class="qrtype-wrap">
-          <div class="seg glass pink flat" id="qrType">
-            <button type="button" data-t="url" aria-pressed="true"><span class="ms">link</span>Link</button>
-            <button type="button" data-t="text" aria-pressed="false"><span class="ms">notes</span>Texto</button>
-            <button type="button" data-t="wifi" aria-pressed="false"><span class="ms">wifi</span>Wi-Fi</button>
-            <button type="button" data-t="email" aria-pressed="false"><span class="ms">mail</span>E-mail</button>
-            <button type="button" data-t="wa" aria-pressed="false"><span class="ms">chat</span>WhatsApp</button>
-            <button type="button" data-t="tel" aria-pressed="false"><span class="ms">call</span>Telefone</button>
-          </div>
-
-      </div>
       <div class="qr-grid">
         <div>
+          <div class="qrtype" id="qrTypeWrap">
+            <button type="button" class="qrtype-btn glass pink flat" id="qrTypeBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span class="ms" id="qrTypeIco">link</span><span id="qrTypeLabel">Link</span><span class="ms chev">expand_more</span>
+            </button>
+            <div class="qrtype-menu glass frost" id="qrType" role="listbox" hidden>
+              <button type="button" role="option" data-t="url" aria-pressed="true"><span class="ms">link</span>Link</button>
+              <button type="button" role="option" data-t="text" aria-pressed="false"><span class="ms">notes</span>Texto</button>
+              <button type="button" role="option" data-t="wifi" aria-pressed="false"><span class="ms">wifi</span>Wi-Fi</button>
+              <button type="button" role="option" data-t="email" aria-pressed="false"><span class="ms">mail</span>E-mail</button>
+              <button type="button" role="option" data-t="wa" aria-pressed="false"><span class="ms">chat</span>WhatsApp</button>
+              <button type="button" role="option" data-t="tel" aria-pressed="false"><span class="ms">call</span>Telefone</button>
+            </div>
+          </div>
           <div id="qrFields"></div>
 
           <div class="switch-row glass frost flat">
@@ -472,13 +480,23 @@ body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-lin
     <div class="label" style="text-align:center;margin:0 0 16px">Instale o Sealoader</div>
     <div class="app-links">
       <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Windows-Setup.exe"><span class="ms">desktop_windows</span>Windows</a>
-      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-AppleSilicon.dmg"><span class="ms">laptop_mac</span>Mac (M1–M4)</a>
-      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-Intel.dmg"><span class="ms">laptop_mac</span>Mac Intel</a>
+      <button class="chip glass flat frost" id="macBtn" aria-expanded="false"><span class="ms">laptop_mac</span>Mac</button>
       <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Linux-x86_64.AppImage"><span class="ms">terminal</span>Linux</a>
-      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Android.apk"><span class="ms">android</span>Android</a>
-      <button class="chip glass flat frost" id="iosBtn"><span class="ms">phone_iphone</span>iPhone</button>
+      <button class="chip glass flat frost" id="mobileBtn" aria-expanded="false"><span class="ms">smartphone</span>Celular</button>
     </div>
-    <p class="apps-note" id="iosNote" hidden>No iPhone, abra este site no <b>Safari</b>, toque em <span class="ms" style="font-size:18px;vertical-align:-3px">ios_share</span> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
+    <div class="apps-more glass frost flat" id="macMore" hidden>
+      <p>Qual é o seu Mac? Veja no <b>menu da maçã → Sobre Este Mac</b>: aparece “Chip Apple M…” ou “Processador Intel”.</p>
+      <div class="app-links">
+        <a class="chip glass flat blue" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-AppleSilicon.dmg">Chip Apple (M1, M2, M3, M4…)</a>
+        <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-Intel.dmg">Intel</a>
+      </div>
+    </div>
+    <div class="apps-more glass frost flat" id="mobileMore" hidden>
+      <button class="big glass blue flat" id="installBtn" hidden style="margin:0 0 16px;min-height:56px;font-size:17px"><span class="ms" style="font-size:24px">install_mobile</span>Instalar o Sealoader</button>
+      <p data-os="android"><b>Android:</b> abra este site no <b>Chrome</b>, toque no menu <b>⋮</b> e em <b>Instalar app</b> (ou "Adicionar à tela inicial"). Depois, em qualquer app, use <b>Compartilhar → Sealoader</b> para baixar o vídeo.</p>
+      <p data-os="ios"><b>iPhone:</b> abra este site no <b>Safari</b>, toque em <span class="ms" style="font-size:18px;vertical-align:-3px">ios_share</span> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
+      <p class="small">No celular, baixar vídeos usa o computador do Paulo (ele precisa estar ligado). O QR code funciona sempre.</p>
+    </div>
     <p class="credit">Visual inspirado em <a href="https://www.figma.com/community/file/1691510784131240473/google-sea-glass" target="_blank" rel="noopener">Google Sea Glass</a> de Julian (CC BY 4.0) · downloads por <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a></p>
   </footer>
 </div>
@@ -534,9 +552,12 @@ async function connect(){
   }
   return false;
 }
-function api(path, opts = {}){
+function api(path, opts = {}, retried){
   const h = Object.assign({}, opts.headers || {}, TOKEN ? {Authorization:'Bearer ' + TOKEN} : {});
-  return fetch(API + path, Object.assign({}, opts, {headers:h})).then(r => {
+  return fetch(API + path, Object.assign({}, opts, {headers:h})).catch(async err => {
+    if(ON_PAGES && !retried){ store.set('backend', null); if(await connect()) return api(path, opts, true); SERVER_OK = false; $('#offline').hidden = false; }
+    throw err;
+  }).then(r => {
     if(r.status === 401){ showLogin(); throw new Error('Digite a senha para continuar'); }
     return r;
   });
@@ -566,7 +587,7 @@ $('#gearBtn').onclick = e => { e.stopPropagation(); const p = $('#pop'); p.hidde
 document.addEventListener('click', e => { if(!$('#pop').hidden && !$('#pop').contains(e.target)) { $('#pop').hidden = true; $('#gearBtn').setAttribute('aria-expanded', false); } });
 $('#cookieSel').value = store.get('cookies', '');
 $('#cookieSel').onchange = e => { store.set('cookies', e.target.value); toast(e.target.value ? 'Usando cookies do '+e.target.selectedOptions[0].text : 'Cookies desativados'); };
-api('/api/share').then(r => r.ok ? r.json() : null).then(sh => {
+(ON_PAGES ? Promise.resolve({ok:false}) : api('/api/share')).then(r => r.ok ? r.json() : null).then(sh => {
   if(!sh) return;
   if(!sh.url){ $('#shareOff').hidden = false; return; }
   $('#share').hidden = false; $('#shareUrl').textContent = sh.url; $('#sharePw').textContent = sh.password;
@@ -590,12 +611,13 @@ function loadVersion(){
 
 /* ================= DOWNLOADER ================= */
 const PLATFORMS = [
-  {k:'youtube',  n:'YouTube',   c:'coral', re:/(youtube\.com|youtu\.be)/i},
-  {k:'tiktok',   n:'TikTok',    c:'mint',  re:/tiktok\.com/i},
-  {k:'instagram',n:'Instagram', c:'pink',  re:/instagram\.com/i},
-  {k:'twitter',  n:'X',         c:'frost', re:/(twitter\.com|x\.com)/i},
-  {k:'telegram', n:'Telegram',  c:'blue',  re:/(t\.me|telegram\.(me|org))/i},
-  {k:'tokyvideo',n:'TokyVideo', c:'sun',   re:/tokyvideo\.com/i},
+  {k:'youtube',  n:'YouTube',   re:/(youtube\.com|youtu\.be)/i},
+  {k:'tiktok',   n:'TikTok',    re:/tiktok\.com/i},
+  {k:'instagram',n:'Instagram', re:/instagram\.com/i},
+  {k:'twitter',  n:'X',         re:/(twitter\.com|x\.com)/i},
+  {k:'telegram', n:'Telegram',  re:/(t\.me|telegram\.(me|org))/i},
+  {k:'tokyvideo',n:'TokyVideo', re:/tokyvideo\.com/i},
+  {k:'vk',       n:'VK Video',  re:/(vk\.com|vkvideo\.ru|vk\.ru)\//i},
 ];
 $('#platforms').innerHTML = 'Funciona com ' + PLATFORMS.map(p => `<span class="pf" data-k="${p.k}">${p.n}</span>`).join(' · ')
   + ` e <span class="pf" data-k="other">mais de 1.800 sites</span>`;
@@ -789,8 +811,14 @@ function renderFields(){
   const s = $('#qrFields [data-k=sec]'); if(s) s.value = f.sec;
   $('#qrFields').querySelectorAll('[data-k]').forEach(el => el.addEventListener('input', () => { f[el.dataset.k] = el.value; renderQR(); }));
   document.querySelectorAll('#qrType button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === qrState.type));
+  const cur = $(`#qrType [data-t="${qrState.type}"]`);
+  $('#qrTypeIco').textContent = cur.querySelector('.ms').textContent; $('#qrTypeLabel').textContent = cur.textContent.replace(cur.querySelector('.ms').textContent, '').trim();
 }
-document.querySelectorAll('#qrType button').forEach(b => b.onclick = () => { qrState.type = b.dataset.t; renderFields(); renderQR(); });
+function qrMenu(open){ $('#qrType').hidden = !open; $('#qrTypeBtn').setAttribute('aria-expanded', open); }
+$('#qrTypeBtn').onclick = e => { e.stopPropagation(); qrMenu($('#qrType').hidden); };
+document.addEventListener('click', e => { if(!e.target.closest('#qrTypeWrap')) qrMenu(false); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') qrMenu(false); });
+document.querySelectorAll('#qrType button').forEach(b => b.onclick = () => { qrState.type = b.dataset.t; qrMenu(false); renderFields(); renderQR(); });
 
 const wifiEsc = s => s.replace(/([\\;,:"])/g, '\\$1');
 function qrData(){
@@ -957,14 +985,28 @@ async function checkServer(){
   if(ok) loadVersion();
   return ok;
 }
-$('#iosBtn').onclick = () => { $('#iosNote').hidden = !$('#iosNote').hidden; };
+function toggleMore(btn, box, other){
+  const open = box.hidden; box.hidden = !open; btn.setAttribute('aria-expanded', open);
+  $(other).hidden = true;
+}
+$('#macBtn').onclick = () => toggleMore($('#macBtn'), $('#macMore'), '#mobileMore');
+$('#mobileBtn').onclick = () => toggleMore($('#mobileBtn'), $('#mobileMore'), '#macMore');
+// only show the instructions for the phone in hand (both when on a computer)
+const OS = /android/i.test(navigator.userAgent) ? 'android' : /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : null;
+if(OS) document.querySelectorAll('#mobileMore [data-os]').forEach(p => p.hidden = p.dataset.os !== OS);
+// Android Chrome: install the web app with one tap
+let installEvt = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; });
+$('#installBtn').onclick = async () => { if(!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $('#installBtn').hidden = true; };
+if(matchMedia('(display-mode: standalone)').matches) document.body.classList.add('is-installed');
 if(ANDROID) document.body.classList.add('is-android');
 
 renderFields();
 const qs = new URLSearchParams(location.search);
 showTab(qs.get('tab') || store.get('tab', 'dl'));
 checkServer().then(ok => {
-  if(qs.get('url')){ showTab('dl'); $('#url').value = qs.get('url'); markPlatform(); if(ok) TOKEN || !ON_PAGES ? fetchInfo() : showLogin(fetchInfo); }
+  const shared = qs.get('url') || ((qs.get('text') || '').match(/https?:\/\/\S+/) || [])[0];
+  if(shared){ showTab('dl'); $('#url').value = shared; markPlatform(); if(ok) TOKEN || !ON_PAGES ? fetchInfo() : showLogin(fetchInfo); }
 });
 if(ON_PAGES) setInterval(() => { if(!SERVER_OK) checkServer(); }, 30e3);
 </script>

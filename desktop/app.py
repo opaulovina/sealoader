@@ -76,8 +76,8 @@ def use_updated_ytdlp():
     finder = _UpdatedYtDlp()
     sys.meta_path.insert(0, finder)
     try:
-        import yt_dlp  # noqa: F401
-        import yt_dlp.YoutubeDL  # noqa: F401
+        import importlib
+        importlib.import_module('yt_dlp.YoutubeDL')
     except Exception as e:  # noqa: BLE001  broken update: forget it, use the bundled one
         print(f'yt-dlp atualizado falhou ({e}); usando o embutido', flush=True)
         sys.meta_path.remove(finder)
