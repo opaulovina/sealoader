@@ -122,8 +122,8 @@ def package_linux(out):
 def package_windows(out):
     iss = os.path.join(ROOT, 'desktop', 'installer.iss')
     iscc = shutil.which('iscc') or r'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
-    subprocess.run([iscc, f'/DSrc={os.path.join(out, "Sealoader")}', f'/DOut={DIST}', f'/DVer={VERSION}',
-                    f'/DIcon={os.path.join(BUILD, "Sealoader.ico")}', iss], check=True)
+    subprocess.run([iscc, f'/DSrcDir={os.path.join(out, "Sealoader")}', f'/DOutDir={DIST}', f'/DAppVer={VERSION}',
+                    f'/DIconFile={os.path.join(BUILD, "Sealoader.ico")}', iss], check=True)
     return os.path.join(DIST, 'Sealoader-Windows-Setup.exe')
 
 

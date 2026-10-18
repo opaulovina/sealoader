@@ -1,19 +1,19 @@
 ; Instalador do Sealoader para Windows (Inno Setup 6). Gerado por desktop/build.py.
-#ifndef Ver
-  #define Ver "1.0.0"
+#ifndef AppVer
+  #define AppVer "1.0.0"
 #endif
 [Setup]
 AppId={{6F1E2B7A-5C1D-4C8E-9C1A-5EA10ADE0001}
 AppName=Sealoader
-AppVersion={#Ver}
+AppVersion={#AppVer}
 AppPublisher=Paulo Vinícius
 DefaultDirName={localappdata}\Programs\Sealoader
 DefaultGroupName=Sealoader
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-OutputDir={#Out}
+OutputDir={#OutDir}
 OutputBaseFilename=Sealoader-Windows-Setup
-SetupIconFile={#Icon}
+SetupIconFile={#IconFile}
 UninstallDisplayIcon={app}\Sealoader.exe
 Compression=lzma2/max
 SolidCompression=yes
@@ -27,7 +27,7 @@ Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; GroupDescription: "Atalhos:"
 
 [Files]
-Source: "{#Src}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "{#SrcDir}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
 Name: "{autoprograms}\Sealoader"; Filename: "{app}\Sealoader.exe"
