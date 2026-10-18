@@ -20,6 +20,7 @@ jobs:
           - {os: macos-15-intel, name: mac-intel}
     runs-on: ${{ matrix.os }}
     env:
+      PYTHONUTF8: '1'          # o console do Windows (cp1252) não imprime → e ✓
       SEALOADER_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
     steps:
       - uses: actions/checkout@v4
