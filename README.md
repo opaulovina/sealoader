@@ -210,6 +210,8 @@ systemctl --user start sealoader
 
 **Downloads:** `POST /api/info` lê os formatos; `POST /api/download` cria um job numa thread; `GET /api/job/<id>` dá o progresso; `GET /api/file/<id>` entrega o arquivo. Os arquivos ficam na pasta temporária `sealoader-jobs` e são apagados depois de 3 horas.
 
+**Velocidade:** alguns CDNs limitam cada conexão (o do TokyVideo fica em ~600 KB/s por conexão). Para arquivos grandes servidos inteiros, `ranged_format()` divide o download em pedaços de 4 MB baixados 8 de cada vez, o que deixa o TokyVideo ~10× mais rápido. Isso exige um ajuste em `DashSegmentsFD._get_fragments` do yt-dlp para repassar `byte_range`, feito no topo de `server.py`. Formatos DASH/HLS também baixam 8 pedaços em paralelo (`concurrent_fragment_downloads`). **Nunca force um User-Agent global no yt-dlp:** o YouTube amarra cada link ao cliente que o pediu e responde 403 se o User-Agent mudar.
+
 **YouTube:** exige um runtime JavaScript para resolver os desafios do site. O servidor usa o deno (`bin/deno`), com o node como reserva, e os apps de desktop levam o deno embutido. O pacote `yt-dlp-ejs` traz os scripts dos desafios, e `remote_components: ejs:github` busca versões novas se precisar.
 
 **Atualização do yt-dlp:**

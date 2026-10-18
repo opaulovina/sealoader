@@ -31,6 +31,7 @@ from flask import Flask, Response, abort, jsonify, request, send_file, send_from
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 import yt_dlp
+from yt_dlp.downloader.dash import DashSegmentsFD
 from yt_dlp.extractor.common import InfoExtractor
 
 HERE = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -174,6 +175,45 @@ def api_ping():
     return jsonify(ok=True)
 
 
+# ---------------------------------------------------------------- parallel ranges
+# Some CDNs (TokyVideo's CDN77) cap each connection at ~600 KB/s. yt-dlp already downloads
+# DASH fragments in parallel and its fragment downloader honours `byte_range`, but the DASH
+# downloader drops that key, so pass it through and describe big files as byte-range fragments.
+_dash_get_fragments = DashSegmentsFD._get_fragments
+
+
+def _get_fragments_with_ranges(self, fmt, ctx, extra_query):
+    frags = fmt['fragments'] if isinstance(fmt.get('fragments'), list) else None
+    for frag in _dash_get_fragments(self, fmt, ctx, extra_query):
+        if frags and frags[frag['index']].get('byte_range'):
+            frag['byte_range'] = frags[frag['index']]['byte_range']
+        yield frag
+
+
+DashSegmentsFD._get_fragments = _get_fragments_with_ranges
+RANGE_CHUNK = 4 * 1024 * 1024
+
+
+def ranged_format(fmt, size):
+    """Turn a plain progressive-download format into parallel 4 MB range requests."""
+    if not size or size < 2 * RANGE_CHUNK:
+        return fmt
+    return {**fmt, 'protocol': 'http_dash_segments', 'filesize': size, 'fragment_base_url': fmt['url'],
+            'fragments': [{'url': fmt['url'], 'byte_range': {'start': a, 'end': min(a + RANGE_CHUNK, size)}}
+                          for a in range(0, size, RANGE_CHUNK)]}
+
+
+def content_length(url, headers):
+    try:
+        req = urllib.request.Request(url, method='HEAD', headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            if r.headers.get('Accept-Ranges', '').lower() == 'bytes':
+                return int(r.headers.get('Content-Length') or 0)
+    except Exception:  # noqa: BLE001
+        pass
+    return 0
+
+
 # ---------------------------------------------------------------- TokyVideo
 class TokyVideoIE(InfoExtractor):
     IE_NAME = 'tokyvideo'
@@ -196,8 +236,10 @@ class TokyVideoIE(InfoExtractor):
             if '.m3u8' in src:
                 formats.extend(self._extract_m3u8_formats(src, video_id, 'mp4', fatal=False))
             else:
-                formats.append({'url': src, 'ext': 'mp4', 'height': height, 'format_id': label or f'mp4-{len(formats)}',
-                                'http_headers': {'Referer': url, 'User-Agent': UA}})
+                hdrs = {'Referer': url, 'User-Agent': UA}
+                fmt = {'url': src, 'ext': 'mp4', 'height': height, 'format_id': label or f'mp4-{len(formats)}',
+                       'http_headers': hdrs, 'acodec': 'aac', 'vcodec': 'h264'}
+                formats.append(ranged_format(fmt, content_length(src, hdrs)))
         if not formats:
             self.raise_no_formats('Nenhum vídeo encontrado nesta página do TokyVideo', expected=True)
         return {
@@ -231,7 +273,6 @@ def base_opts(cookies_browser=None):
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
-        'http_headers': {'User-Agent': UA},
         'remote_components': ['ejs:github'],
     }
     rt = js_runtime()
@@ -387,7 +428,7 @@ def run_job(job_id, data):
         'outtmpl': os.path.join(outdir, '%(title).120B [%(id)s].%(ext)s'),
         'progress_hooks': [hook],
         'postprocessor_hooks': [pp_hook],
-        'concurrent_fragment_downloads': 4,
+        'concurrent_fragment_downloads': 8,
         'windowsfilenames': True,
     })
     try:

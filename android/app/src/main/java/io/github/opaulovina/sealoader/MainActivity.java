@@ -146,6 +146,12 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        android.webkit.CookieManager.getInstance().flush();
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
         web.saveState(out);
@@ -227,6 +233,17 @@ public class MainActivity extends Activity {
 
     /** Exposed to the page as window.SealoaderAndroid. */
     private class Bridge {
+        /** The login token also lives in SharedPreferences, so the app never asks for the password again. */
+        @JavascriptInterface
+        public String getToken() {
+            return getSharedPreferences("sealoader", MODE_PRIVATE).getString("token", "");
+        }
+
+        @JavascriptInterface
+        public void setToken(String token) {
+            getSharedPreferences("sealoader", MODE_PRIVATE).edit().putString("token", token).apply();
+        }
+
         @JavascriptInterface
         public String getClipboard() {
             ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);

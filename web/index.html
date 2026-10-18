@@ -97,7 +97,9 @@ section[hidden]{display:none}
 .spin{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-.platforms{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:30px 0 0}
+.platforms{margin:26px 8px 0;text-align:center;font-size:15px;line-height:1.7;color:var(--ink-3)}
+.platforms .pf{color:var(--ink-2);transition:color .2s}
+.platforms .pf.on{color:var(--blue-ink);font-weight:600}
 .chip{border:0;font-size:14px;font-weight:500;padding:8px 14px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;cursor:default;transition:transform .25s}
 .chip .dot{width:9px;height:9px;border-radius:50%;background:currentColor;opacity:.55}
 .chip.on{transform:translateY(-3px)}
@@ -209,9 +211,10 @@ select.inp{appearance:none;cursor:pointer;background-image:none}
 .drop b{display:block;font-size:17px}
 .drop small{opacity:.75;font-size:14px}
 .drop.over{transform:scale(1.01)}
-.range{display:flex;align-items:center;gap:14px;margin-top:6px}
-.range label{font-size:14px;font-weight:500;min-width:110px;color:var(--ink-2)}
-.range output{font-size:14px;font-variant-numeric:tabular-nums;min-width:42px;text-align:right;color:var(--ink-2)}
+.range{display:grid;grid-template-columns:92px minmax(0,1fr) 40px;align-items:center;gap:12px;margin-top:6px}
+.range label{font-size:14px;font-weight:500;color:var(--ink-2)}
+.range input{width:100%;min-width:0}
+.range output{font-size:14px;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink-2)}
 input[type=range]{flex:1;appearance:none;-webkit-appearance:none;height:14px;border-radius:999px;background:linear-gradient(180deg,var(--pink-1),var(--pink-2));box-shadow:inset 0 -2px 4px rgba(255,255,255,.5),0 4px 3px -2px var(--ledge);outline:0}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,#fff,#f3f3f6);box-shadow:0 4px 3px -1px rgba(0,0,0,.2);cursor:pointer}
 input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radius:50%;background:#fff;box-shadow:0 4px 3px -1px rgba(0,0,0,.2);cursor:pointer}
@@ -236,7 +239,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 .credit a{color:inherit}
 .apps-note{max-width:460px;text-align:center;color:var(--ink-2);font-size:15px;line-height:1.5;margin:22px 0 0}
 body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-links,body.is-android .apps>.label{display:none}
-.veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;place-items:center;padding:16px}
+.veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:flex-start;padding:max(16px,12vh) 16px 16px;overflow-y:auto}
 .login{width:min(460px,100%);border-radius:40px;padding:30px 24px 18px;text-align:center}
 .login-ico{width:72px;height:72px;filter:drop-shadow(0 8px 6px rgba(70,66,80,.16))}
 .login h2{margin:14px 0 6px;font-size:24px}
@@ -251,6 +254,20 @@ body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-lin
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 @media (max-width:760px){
+  .login{border-radius:32px;padding:22px 16px 10px}
+  .login-ico{width:52px;height:52px}
+  .login h2{font-size:20px;margin:10px 0 4px}
+  .login p{font-size:14px;margin-bottom:16px}
+  .login .bar{min-height:60px!important;padding:5px 5px 5px 16px}
+  .login .bar input{font-size:17px}
+  .login .go{width:48px!important;height:48px!important}
+  .veil{padding-top:max(16px,6vh)}
+  .qrtype-wrap{margin:0 0 30px!important;padding:0!important;overflow:visible!important}
+  #qrType{display:grid;grid-template-columns:repeat(3,1fr);width:100%;border-radius:28px}
+  #qrType button{justify-content:center;padding:10px 4px;font-size:15px;gap:5px}
+  #qrType button .ms{font-size:18px}
+  .custom{padding:20px 16px;border-radius:32px}
+  .range{grid-template-columns:76px minmax(0,1fr) 36px;gap:10px}
   .qrtype-wrap{justify-content:flex-start;margin:0 -16px 30px;padding:0 16px 20px}
   .wrap{padding:28px 16px 80px}
   header{gap:26px}
@@ -454,12 +471,12 @@ body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-lin
   <footer class="apps" id="apps">
     <div class="label" style="text-align:center;margin:0 0 16px">Instale o Sealoader</div>
     <div class="app-links">
-      <a class="chip glass flat blue" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Windows-Setup.exe"><span class="ms">desktop_windows</span>Windows</a>
+      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Windows-Setup.exe"><span class="ms">desktop_windows</span>Windows</a>
       <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-AppleSilicon.dmg"><span class="ms">laptop_mac</span>Mac (M1–M4)</a>
       <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-Intel.dmg"><span class="ms">laptop_mac</span>Mac Intel</a>
-      <a class="chip glass flat sun" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Linux-x86_64.AppImage"><span class="ms">terminal</span>Linux</a>
-      <a class="chip glass flat mint" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Android.apk"><span class="ms">android</span>Android</a>
-      <button class="chip glass flat pink" id="iosBtn"><span class="ms">phone_iphone</span>iPhone</button>
+      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Linux-x86_64.AppImage"><span class="ms">terminal</span>Linux</a>
+      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Android.apk"><span class="ms">android</span>Android</a>
+      <button class="chip glass flat frost" id="iosBtn"><span class="ms">phone_iphone</span>iPhone</button>
     </div>
     <p class="apps-note" id="iosNote" hidden>No iPhone, abra este site no <b>Safari</b>, toque em <span class="ms" style="font-size:18px;vertical-align:-3px">ios_share</span> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
     <p class="credit">Visual inspirado em <a href="https://www.figma.com/community/file/1691510784131240473/google-sea-glass" target="_blank" rel="noopener">Google Sea Glass</a> de Julian (CC BY 4.0) · downloads por <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a></p>
@@ -497,7 +514,7 @@ const store = {
 const REPO = 'opaulovina/sealoader';
 const ON_PAGES = /\.github\.io$/.test(location.hostname);
 const ANDROID = window.SealoaderAndroid || null;
-let API = '', TOKEN = store.get('token', ''), SERVER_OK = !ON_PAGES, DESKTOP = false;
+let API = '', TOKEN = store.get('token', '') || (ANDROID && ANDROID.getToken ? ANDROID.getToken() : ''), SERVER_OK = !ON_PAGES, DESKTOP = false;
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 async function backendUrl(fresh){
   const c = store.get('backend', null);
@@ -580,12 +597,12 @@ const PLATFORMS = [
   {k:'telegram', n:'Telegram',  c:'blue',  re:/(t\.me|telegram\.(me|org))/i},
   {k:'tokyvideo',n:'TokyVideo', c:'sun',   re:/tokyvideo\.com/i},
 ];
-$('#platforms').innerHTML = PLATFORMS.map(p => `<span class="chip glass flat ${p.c}" data-k="${p.k}"><span class="dot"></span>${p.n}</span>`).join('')
-  + `<span class="chip glass flat frost" data-k="other"><span class="dot"></span>+ 1.800 sites</span>`;
+$('#platforms').innerHTML = 'Funciona com ' + PLATFORMS.map(p => `<span class="pf" data-k="${p.k}">${p.n}</span>`).join(' · ')
+  + ` e <span class="pf" data-k="other">mais de 1.800 sites</span>`;
 function detect(u){ const p = PLATFORMS.find(p => p.re.test(u)); return p ? p.k : (/^https?:\/\//.test(u) ? 'other' : null); }
 function markPlatform(){
   const k = detect($('#url').value.trim());
-  document.querySelectorAll('#platforms .chip').forEach(c => c.classList.toggle('on', c.dataset.k === k));
+  document.querySelectorAll('#platforms .pf').forEach(c => c.classList.toggle('on', c.dataset.k === k));
   $('#clearBtn').hidden = !$('#url').value;
 }
 $('#url').addEventListener('input', markPlatform);
@@ -927,7 +944,7 @@ $('#loginForm').onsubmit = async e => {
     const r = await fetch(API + '/api/login', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({password:pw})});
     const d = await r.json();
     if(!d.ok) throw new Error(d.error || 'Senha incorreta');
-    TOKEN = d.token; store.set('token', TOKEN);
+    TOKEN = d.token; store.set('token', TOKEN); if(ANDROID && ANDROID.setToken) ANDROID.setToken(TOKEN);
     $('#loginVeil').hidden = true; toast('Pronto, pode baixar!');
     const f = afterLogin; afterLogin = null; f && f();
   }catch(err){ $('#loginErr').textContent = err.message === 'Failed to fetch' ? OFFLINE_MSG : err.message; $('#loginErr').hidden = false; }
@@ -937,7 +954,7 @@ async function checkServer(){
   const ok = await connect();
   SERVER_OK = ok;
   $('#offline').hidden = ok; $('#urlForm').style.opacity = ok ? '' : '.6';
-  if(ok){ loadVersion(); if(ON_PAGES && !TOKEN) showLogin(); }
+  if(ok) loadVersion();
   return ok;
 }
 $('#iosBtn').onclick = () => { $('#iosNote').hidden = !$('#iosNote').hidden; };
