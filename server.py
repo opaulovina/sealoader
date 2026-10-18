@@ -106,10 +106,13 @@ def client_ip():
 
 
 PUBLIC_API = {'/api/login', '/api/version'}
+LOCAL_HOSTS = {'127.0.0.1', 'localhost', '::1'}
 
 
 @app.before_request
 def guard():
+    if not is_remote() and urllib.parse.urlsplit(f'//{request.host}').hostname not in LOCAL_HOSTS:
+        abort(403)  # DNS rebinding: a foreign site resolving its name to 127.0.0.1
     if request.method == 'OPTIONS':
         return Response(status=204)
     if not request.path.startswith('/api/') or request.path in PUBLIC_API or not is_remote():
@@ -487,6 +490,16 @@ def is_private_host(url):
         return True
 
 
+class PublicRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not re.match(r'^https?://', newurl) or is_private_host(newurl):
+            raise urllib.error.HTTPError(newurl, 403, 'redirect to private host', headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+THUMB_OPENER = urllib.request.build_opener(PublicRedirects)
+
+
 @app.get('/api/thumb')
 def api_thumb():
     url = request.args.get('u', '')
@@ -494,7 +507,7 @@ def api_thumb():
         abort(400)
     try:
         req = urllib.request.Request(url, headers={'User-Agent': UA, 'Referer': urllib.parse.urljoin(url, '/')})
-        with urllib.request.urlopen(req, timeout=15) as r:
+        with THUMB_OPENER.open(req, timeout=15) as r:
             ctype = r.headers.get('Content-Type', 'image/jpeg')
             if not ctype.startswith('image/'):
                 abort(415)
