@@ -1,0 +1,17 @@
+# segredos e estado da máquina — NUNCA versionar
+config.json
+android/keystore/
+android/local.properties
+# ambientes e binários baixados
+venv/
+bin/
+__pycache__/
+*.pyc
+server.log
+# builds
+build/
+dist/
+android/.gradle/
+android/app/build/
+android/build/
+*.AppImage

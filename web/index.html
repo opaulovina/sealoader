@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sealoader</title>
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sealoader">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Outfit:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;
+  --ink:#1d1b22; --ink-2:#5d5966; --ink-3:#8c8896;
+  --pink-1:#e6b0f8; --pink-2:#f9c5fe; --pink-ink:#6e2d85;
+  --blue-1:#abc1fb; --blue-2:#d0e6fe; --blue-ink:#2f4786;
+  --coral-1:#f6b0ae; --coral-2:#f2d3d1; --coral-ink:#862d2f;
+  --mint-1:#a6e3cf; --mint-2:#d6f6ea; --mint-ink:#1d5a4a;
+  --sun-1:#f8d68f; --sun-2:#fdf0cc; --sun-ink:#6b4a06;
+  --frost-1:#e9ecf3; --frost-2:#f9fafc; --frost-ink:#2d2f3a;
+  --ledge:rgba(70,66,80,.17); --ledge-2:rgba(70,66,80,.08);
+  --hi:rgba(255,255,255,.55);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.2 0 0 0 0 0.3 0 0 0 1.6 -0.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --font:"Google Sans Flex","Google Sans","Outfit",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+.ms{font-family:"Material Symbols Rounded";font-weight:500;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:"liga";font-feature-settings:"liga";font-variation-settings:"FILL" 1,"wght" 500,"opsz" 24;user-select:none}
+
+/* ---------- Sea glass material ---------- */
+.glass{
+  --c1:var(--frost-1); --c2:var(--frost-2); --ink-c:var(--frost-ink);
+  position:relative;isolation:isolate;border:0;color:var(--ink-c);
+  background:linear-gradient(180deg,var(--c1) 0%,var(--c2) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,.45),
+    inset 0 -7px 12px -2px var(--hi),
+    inset 0 0 0 1.5px rgba(255,255,255,.22),
+    inset 0 6px 14px -6px rgba(0,0,0,.05),
+    0 13px 7px -3px var(--ledge),
+    0 20px 24px -8px var(--ledge-2);
+}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;background-image:var(--grain);background-size:180px;opacity:.16;mix-blend-mode:multiply;pointer-events:none;z-index:2}
+.glass>*{position:relative;z-index:3}
+.pink{--c1:var(--pink-1);--c2:var(--pink-2);--ink-c:var(--pink-ink)}
+.blue{--c1:var(--blue-1);--c2:var(--blue-2);--ink-c:var(--blue-ink)}
+.coral{--c1:var(--coral-1);--c2:var(--coral-2);--ink-c:var(--coral-ink)}
+.mint{--c1:var(--mint-1);--c2:var(--mint-2);--ink-c:var(--mint-ink)}
+.sun{--c1:var(--sun-1);--c2:var(--sun-2);--ink-c:var(--sun-ink)}
+.frost{--c1:var(--frost-1);--c2:var(--frost-2);--ink-c:var(--frost-ink)}
+.flat{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.45),inset 0 -5px 10px -2px var(--hi),inset 0 0 0 1.5px rgba(255,255,255,.22),0 7px 4px -2px var(--ledge),0 10px 14px -6px var(--ledge-2)}
+/* the lighter inset "bubble" used for the selected tab and round inner buttons */
+.bubble{position:relative;background:rgba(255,255,255,.34);box-shadow:inset 0 -3px 8px rgba(255,255,255,.35),inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.03)}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:780px;margin:0 auto;padding:44px 20px 96px;display:flex;flex-direction:column;align-items:center}
+header{display:flex;flex-direction:column;align-items:center;gap:36px;width:100%;position:relative}
+.orb{width:88px;height:88px;border-radius:50%;display:grid;place-items:center}
+.orb svg{width:54px;height:54px}
+.gear{position:absolute;right:0;top:12px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.gear .ms{font-size:26px}
+
+.tabs{display:inline-flex;gap:6px;padding:9px;border-radius:999px}
+.tab{border:0;background:transparent;color:inherit;font-size:25px;font-weight:500;letter-spacing:-.01em;padding:14px 28px;border-radius:999px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .25s,box-shadow .25s}
+.tab .ms{font-size:30px}
+.tab[aria-selected="true"]{background:rgba(255,255,255,.34);box-shadow:inset 0 -3px 8px rgba(255,255,255,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+.tab:not([aria-selected="true"]):hover{background:rgba(255,255,255,.14)}
+
+.seg{display:inline-flex;gap:4px;padding:6px;border-radius:999px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:inherit;font-size:16px;font-weight:500;padding:9px 18px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .2s}
+.seg button .ms{font-size:20px}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.4);box-shadow:inset 0 -3px 7px rgba(255,255,255,.35),inset 0 1px 0 rgba(255,255,255,.55)}
+.seg button:not([aria-pressed="true"]):hover{background:rgba(255,255,255,.16)}
+
+main{width:100%;margin-top:56px}
+section[hidden]{display:none}
+
+/* ---------- URL bar ---------- */
+.bar{display:flex;align-items:center;gap:6px;padding:10px 10px 10px 18px;border-radius:999px;min-height:86px}
+.bar input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:25px;color:var(--blue-ink);padding:6px 8px}
+.bar input::placeholder{color:var(--blue-ink);opacity:.95}
+.icon-btn{border:0;background:transparent;color:inherit;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:none;transition:background .2s}
+.icon-btn:hover{background:rgba(255,255,255,.2)}
+.icon-btn .ms{font-size:28px}
+.go{width:66px;height:66px}
+.go .ms{font-size:30px}
+.go:disabled{opacity:.5;cursor:default}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.platforms{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:30px 0 0}
+.chip{border:0;font-size:14px;font-weight:500;padding:8px 14px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;cursor:default;transition:transform .25s}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:currentColor;opacity:.55}
+.chip.on{transform:translateY(-3px)}
+.chip.on .dot{opacity:1}
+
+/* ---------- Cards ---------- */
+.card{border-radius:40px;padding:28px;margin-top:44px}
+.media{display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:center}
+.thumb{width:100%;aspect-ratio:16/9;border-radius:24px;object-fit:cover;background:rgba(0,0,0,.05);display:block}
+.media h2{font-size:23px;line-height:1.25;font-weight:600;margin:0 0 10px;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--ink-2);font-size:14px}
+.meta span{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.5);padding:5px 11px;border-radius:999px}
+.meta .ms{font-size:17px}
+.label{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:28px 4px 12px}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{border:0;padding:11px 18px;border-radius:999px;font-size:16px;font-weight:500;cursor:pointer;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.15;transition:transform .2s}
+.opt small{font-size:12px;opacity:.7;font-weight:500}
+.opt:hover{transform:translateY(-1px)}
+.opt[aria-pressed="true"]{--c1:var(--blue-1);--c2:var(--blue-2);--ink-c:var(--blue-ink)}
+.opt.frost:not([aria-pressed="true"]){--c1:#f1f2f6;--c2:#fdfdfe}
+
+.raw{max-height:320px;overflow:auto;border-radius:24px;background:rgba(255,255,255,.55);padding:6px}
+.raw table{width:100%;border-collapse:collapse;font-size:14px}
+.raw td{padding:9px 10px;border-bottom:1px solid rgba(0,0,0,.05);white-space:nowrap}
+.raw tr{cursor:pointer}
+.raw tr:hover td{background:rgba(171,193,251,.18)}
+.raw tr.sel td{background:rgba(171,193,251,.38)}
+.raw td:first-child{border-radius:12px 0 0 12px}.raw td:last-child{border-radius:0 12px 12px 0}
+
+.big{border:0;width:100%;margin-top:34px;min-height:76px;border-radius:999px;font-size:22px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;padding:12px 24px}
+.big .ms{font-size:30px}
+.big small{font-weight:500;opacity:.75;font-size:17px}
+.big:disabled{opacity:.6;cursor:default}
+
+.progress{margin-top:34px;border-radius:999px;min-height:76px;padding:10px;display:flex;align-items:center;gap:14px;overflow:hidden}
+.progress .fill{position:absolute;inset:0;width:0;border-radius:inherit;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.45));transition:width .4s ease;z-index:1}
+.progress .ring{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;flex:none}
+.progress .txt{flex:1;min-width:0}
+.progress .t1{font-size:19px;font-weight:600}
+.progress .t2{font-size:14px;opacity:.8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress .pct{font-size:24px;font-weight:600;padding-right:14px;font-variant-numeric:tabular-nums}
+
+.err{margin-top:30px;border-radius:30px;padding:18px 22px;display:flex;gap:14px;white-space:pre-wrap;font-size:15px;line-height:1.45;word-break:break-word}
+.err .ms{flex:none}
+
+.history{margin-top:44px;display:flex;flex-direction:column;gap:14px}
+.hist{border-radius:999px;padding:8px 8px 8px 22px;display:flex;align-items:center;gap:12px}
+.hist .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.hist .s{font-size:13px;opacity:.7;white-space:nowrap}
+
+/* ---------- QR ---------- */
+.qrtype-wrap{display:flex;justify-content:safe center;margin:0 -20px 40px;padding:0 20px 22px;overflow-x:auto;scrollbar-width:none}
+.qrtype-wrap::-webkit-scrollbar{display:none}
+#qrType{flex-wrap:nowrap;flex:none}
+#eccSeg{display:grid;grid-template-columns:repeat(4,1fr);width:100%}
+#eccSeg button{padding:9px 4px;justify-content:center;min-width:0;font-size:15px}
+.qrbox.empty>*{opacity:.18;filter:blur(1px)}
+.qrbox{position:relative}
+.qrbox .hint{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-weight:600;color:var(--ink-2);padding:30px;opacity:1!important;filter:none!important}
+.qr-grid{display:grid;grid-template-columns:1fr 330px;gap:32px;align-items:start}
+.field{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.field>span{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-left:6px}
+.inp{border:0;outline:0;border-radius:999px;padding:18px 24px;font-size:18px;width:100%}
+.inp.blue::placeholder{color:var(--blue-ink);opacity:.7}
+textarea.inp{border-radius:30px;min-height:120px;resize:vertical;line-height:1.4}
+select.inp{appearance:none;cursor:pointer;background-image:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.preview{border-radius:40px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:18px;position:sticky;top:24px}
+.qrbox{width:282px;height:282px;border-radius:26px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
+.qrbox.checker{background:repeating-conic-gradient(#eef0f4 0 25%,#fff 0 50%) 0 0/18px 18px}
+.qrbox svg,.qrbox canvas{display:block}
+.badge{font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.badge .ms{font-size:17px}
+.exp{display:flex;gap:10px;width:100%}
+.exp .big{margin:0;min-height:60px;font-size:18px;flex:1}
+.exp .big .ms{font-size:24px}
+.sizes{width:100%}
+
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border-radius:999px;padding:12px 12px 12px 26px;margin:6px 0 26px}
+.switch-row b{font-size:19px;font-weight:600}
+.switch-row p{margin:2px 0 0;font-size:14px;opacity:.75}
+.switch{position:relative;width:76px;height:44px;border-radius:999px;border:0;cursor:pointer;flex:none;padding:0}
+.switch::before{content:"";position:absolute;z-index:4;top:5px;left:5px;width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#fff,#f4f4f7);box-shadow:0 4px 3px -1px rgba(0,0,0,.18),inset 0 -2px 4px rgba(0,0,0,.05);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
+.switch[aria-checked="true"]::before{transform:translateX(32px)}
+.switch.sm{width:60px;height:36px}
+.switch.sm::before{width:26px;height:26px}
+.switch.sm[aria-checked="true"]::before{transform:translateX(24px)}
+
+.custom{border-radius:40px;padding:26px;margin-bottom:24px;min-width:0}
+.custom .seg,.custom .shapes,.custom .colors{max-width:100%}
+.qr-grid>div{min-width:0}
+.custom[hidden]{display:none}
+.colors{display:flex;flex-wrap:wrap;gap:12px}
+.color{display:flex;align-items:center;gap:10px;border-radius:999px;padding:7px 16px 7px 7px;font-weight:500;font-size:15px;cursor:pointer}
+.color input{appearance:none;-webkit-appearance:none;width:36px;height:36px;border:0;padding:0;border-radius:50%;background:none;cursor:pointer;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),0 2px 4px rgba(0,0,0,.15)}
+.color input::-webkit-color-swatch-wrapper{padding:0}
+.color input::-webkit-color-swatch{border:0;border-radius:50%}
+.color input::-moz-color-swatch{border:0;border-radius:50%}
+.toggles{display:flex;flex-wrap:wrap;gap:12px 22px;margin-top:16px}
+.toggle{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:500}
+.shapes{display:flex;flex-wrap:wrap;gap:10px}
+.shape{border:0;border-radius:22px;padding:10px 12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600;min-width:78px}
+.shape svg{width:38px;height:38px}
+.shape[aria-pressed="true"]{--c1:var(--blue-1);--c2:var(--blue-2);--ink-c:var(--blue-ink)}
+.shape.frost:not([aria-pressed="true"]){--c1:#f1f2f6;--c2:#fdfdfe}
+.drop{border-radius:30px;padding:18px;display:flex;align-items:center;gap:16px;cursor:pointer;border:0;width:100%;text-align:left}
+.drop .ph{width:64px;height:64px;border-radius:20px;background:rgba(255,255,255,.45);display:grid;place-items:center;overflow:hidden;flex:none}
+.drop .ph img{width:100%;height:100%;object-fit:contain}
+.drop b{display:block;font-size:17px}
+.drop small{opacity:.75;font-size:14px}
+.drop.over{transform:scale(1.01)}
+.range{display:flex;align-items:center;gap:14px;margin-top:6px}
+.range label{font-size:14px;font-weight:500;min-width:110px;color:var(--ink-2)}
+.range output{font-size:14px;font-variant-numeric:tabular-nums;min-width:42px;text-align:right;color:var(--ink-2)}
+input[type=range]{flex:1;appearance:none;-webkit-appearance:none;height:14px;border-radius:999px;background:linear-gradient(180deg,var(--pink-1),var(--pink-2));box-shadow:inset 0 -2px 4px rgba(255,255,255,.5),0 4px 3px -2px var(--ledge);outline:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,#fff,#f3f3f6);box-shadow:0 4px 3px -1px rgba(0,0,0,.2);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radius:50%;background:#fff;box-shadow:0 4px 3px -1px rgba(0,0,0,.2);cursor:pointer}
+
+/* ---------- Settings popover ---------- */
+.pop{position:absolute;right:0;top:78px;z-index:20;width:min(360px,calc(100vw - 32px));border-radius:32px;padding:22px}
+.pop[hidden]{display:none}
+.pop h3{margin:0 0 6px;font-size:18px}
+.pop p{margin:0 0 14px;font-size:14px;opacity:.8;line-height:1.4}
+.share-qr{display:grid;place-items:center;background:#fff;border-radius:22px;padding:10px;margin:0 auto 14px;width:fit-content}
+.share-row{display:flex;align-items:center;gap:6px;border-radius:999px;padding:4px 4px 4px 18px;margin-bottom:10px}
+.share-v{flex:1;min-width:0;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.share-row .icon-btn{width:42px;height:42px}.share-row .icon-btn .ms{font-size:20px}
+.pop{max-height:calc(100vh - 110px);overflow:auto}
+.pop .ver{margin-top:14px;font-size:12px;opacity:.65}
+
+.apps{margin-top:72px;width:100%;display:flex;flex-direction:column;align-items:center}
+.app-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.app-links .chip{text-decoration:none;font-size:15px;padding:10px 16px;cursor:pointer}
+.app-links .chip .ms{font-size:20px}
+.apps-note{max-width:460px;text-align:center;color:var(--ink-2);font-size:15px;line-height:1.5;margin:22px 0 0}
+body.is-desktop .apps,body.is-android .apps{display:none}
+.veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;place-items:center;padding:16px}
+.login{width:min(460px,100%);border-radius:40px;padding:30px 24px 18px;text-align:center}
+.login-ico{width:72px;height:72px;filter:drop-shadow(0 8px 6px rgba(70,66,80,.16))}
+.login h2{margin:14px 0 6px;font-size:24px}
+.login p{margin:0 0 24px;color:var(--ink-2);font-size:15px}
+.login .bar{padding:7px 7px 7px 20px}
+.login .bar input{font-size:20px}
+.login-err{margin-top:16px;color:var(--coral-ink);font-weight:600}
+.login-skip{margin-top:14px;border:0;background:none;color:var(--ink-3);font-weight:500;cursor:pointer;padding:8px 14px}
+.offline{margin-top:30px;border-radius:30px;padding:18px 22px;display:flex;gap:14px;font-size:15px;line-height:1.45}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,220%);opacity:0;border-radius:999px;padding:14px 24px;font-weight:600;transition:transform .35s cubic-bezier(.3,1.3,.5,1),opacity .2s;z-index:50;display:flex;gap:10px;align-items:center}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:760px){
+  .qrtype-wrap{justify-content:flex-start;margin:0 -16px 30px;padding:0 16px 20px}
+  .wrap{padding:28px 16px 80px}
+  header{gap:26px}
+  .orb{width:68px;height:68px}.orb svg{width:42px;height:42px}
+  .tab{font-size:18px;padding:11px 18px}.tab .ms{font-size:22px}
+  .bar{min-height:70px;padding:7px 7px 7px 10px}
+  .bar input{font-size:18px}
+  .go{width:54px;height:54px}
+  .media{grid-template-columns:1fr}
+  .card{padding:20px;border-radius:32px}
+  .qr-grid{grid-template-columns:1fr}
+  .preview{position:static;order:-1}
+  .row2{grid-template-columns:1fr}
+  .gear{width:44px;height:44px;top:4px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="orb glass coral" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M32 15v22M23 29l9 9 9-9" stroke-width="5.5"/><path d="M19 47c4.3-2.8 8.7-2.8 13 0s8.7 2.8 13 0" stroke-width="4"/></svg></div>
+    <button class="gear glass frost flat" id="gearBtn" aria-label="Configurações" aria-expanded="false"><span class="ms">tune</span></button>
+    <div class="pop glass frost" id="pop" hidden>
+      <div id="share" hidden>
+        <h3>Compartilhar</h3>
+        <p>Envie o link e a senha. Funciona em qualquer celular ou computador enquanto este PC estiver ligado.</p>
+        <div class="share-qr" id="shareQr"></div>
+        <div class="share-row glass blue flat"><span class="share-v" id="shareUrl"></span><button class="icon-btn" data-copy="shareUrl" title="Copiar link"><span class="ms">content_copy</span></button></div>
+        <div class="share-row glass pink flat"><span class="share-v"><span class="ms" style="font-size:18px;vertical-align:-3px">key</span> <span id="sharePw"></span></span><button class="icon-btn" data-copy="sharePw" title="Copiar senha"><span class="ms">content_copy</span></button></div>
+        <button class="big glass coral flat" id="shareMsg" style="margin:14px 0 22px;min-height:52px;font-size:16px"><span class="ms" style="font-size:22px">send</span>Copiar convite</button>
+      </div>
+      <div id="shareOff" hidden><h3>Compartilhar</h3><p>O túnel está desligado, então o app só funciona neste PC. Abra o Sealoader pelo menu de aplicativos para ligá-lo.</p></div>
+      <h3>Cookies do navegador</h3>
+      <p id="cookieHelp">Instagram, X e alguns vídeos privados ou com restrição de idade exigem login. Escolha um navegador em que você esteja logado neste computador para o app usar a sessão dele.</p>
+      <select class="inp glass blue flat" id="cookieSel">
+        <option value="">Não usar cookies</option>
+        <option value="chrome">Google Chrome</option>
+        <option value="brave">Brave</option>
+        <option value="firefox">Firefox</option>
+        <option value="chromium">Chromium</option>
+        <option value="edge">Microsoft Edge</option>
+        <option value="safari">Safari (Mac)</option>
+      </select>
+      <div class="ver" id="ver"></div>
+    </div>
+    <nav class="tabs glass pink" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="dl"><span class="ms">video_library</span>Baixar</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="qr"><span class="ms">qr_code_2</span>QR Code</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ================= DOWNLOADER ================= -->
+    <section id="tab-dl">
+      <form class="bar glass blue" id="urlForm" autocomplete="off">
+        <button type="button" class="icon-btn" id="pasteBtn" title="Colar da área de transferência"><span class="ms">add</span></button>
+        <label for="url" class="sr">Link do vídeo</label>
+        <input id="url" type="url" placeholder="Cole o link do vídeo" inputmode="url" spellcheck="false">
+        <button type="button" class="icon-btn" id="clearBtn" title="Limpar" hidden><span class="ms">close</span></button>
+        <button type="submit" class="icon-btn go bubble" id="goBtn" title="Buscar"><span class="ms">arrow_forward</span></button>
+      </form>
+
+      <div class="platforms" id="platforms"></div>
+
+      <div class="offline glass sun flat" id="offline" hidden><span class="ms">power_off</span><div><b>O servidor está desligado agora.</b><br>Baixar vídeos volta a funcionar assim que o computador do Paulo ligar. O QR code funciona normalmente. Se preferir não depender dele, instale o app no seu computador (lá embaixo).</div></div>
+      <div id="errBox"></div>
+
+      <div class="card glass frost" id="result" hidden>
+        <div class="media">
+          <img class="thumb" id="thumb" alt="">
+          <div>
+            <h2 id="title"></h2>
+            <div class="meta" id="meta"></div>
+          </div>
+        </div>
+
+        <div class="label">Formato</div>
+        <div class="seg glass pink flat" id="kindSeg">
+          <button type="button" data-kind="video" aria-pressed="true"><span class="ms">movie</span>Vídeo</button>
+          <button type="button" data-kind="audio" aria-pressed="false"><span class="ms">music_note</span>Só áudio</button>
+          <button type="button" data-kind="raw" aria-pressed="false"><span class="ms">list</span>Todos os formatos</button>
+        </div>
+
+        <div id="pane-video">
+          <div class="label">Qualidade</div>
+          <div class="opts" id="resOpts"></div>
+          <div class="label">Contêiner</div>
+          <div class="opts" id="contOpts"></div>
+        </div>
+        <div id="pane-audio" hidden>
+          <div class="label">Tipo de arquivo</div>
+          <div class="opts" id="audOpts"></div>
+          <div id="brWrap">
+            <div class="label">Qualidade do MP3</div>
+            <div class="opts" id="brOpts"></div>
+          </div>
+        </div>
+        <div id="pane-raw" hidden>
+          <div class="label">Formatos que o site oferece</div>
+          <div class="raw"><table id="rawTable"></table></div>
+        </div>
+
+        <button class="big glass coral" id="dlBtn"><span class="ms">download</span><span id="dlLabel">Baixar</span></button>
+        <div class="progress glass mint" id="prog" hidden>
+          <div class="fill" id="progFill"></div>
+          <div class="ring bubble"><span class="ms" id="progIcon">downloading</span></div>
+          <div class="txt"><div class="t1" id="progT1">Preparando…</div><div class="t2" id="progT2"></div></div>
+          <div class="pct" id="progPct">0%</div>
+        </div>
+      </div>
+
+      <div class="history" id="history"></div>
+    </section>
+
+    <!-- ================= QR CODE ================= -->
+    <section id="tab-qr" hidden>
+      <div class="qrtype-wrap">
+          <div class="seg glass pink flat" id="qrType">
+            <button type="button" data-t="url" aria-pressed="true"><span class="ms">link</span>Link</button>
+            <button type="button" data-t="text" aria-pressed="false"><span class="ms">notes</span>Texto</button>
+            <button type="button" data-t="wifi" aria-pressed="false"><span class="ms">wifi</span>Wi-Fi</button>
+            <button type="button" data-t="email" aria-pressed="false"><span class="ms">mail</span>E-mail</button>
+            <button type="button" data-t="wa" aria-pressed="false"><span class="ms">chat</span>WhatsApp</button>
+            <button type="button" data-t="tel" aria-pressed="false"><span class="ms">call</span>Telefone</button>
+          </div>
+
+      </div>
+      <div class="qr-grid">
+        <div>
+          <div id="qrFields"></div>
+
+          <div class="switch-row glass frost flat">
+            <div><b>Personalizar</b><p>Cores, formato dos pontos e logo no centro</p></div>
+            <button class="switch glass frost flat" role="switch" aria-checked="false" id="customSw" aria-label="Personalizar QR code"></button>
+          </div>
+
+          <div class="custom glass frost" id="customPanel" hidden>
+            <div class="label" style="margin-top:0">Cores</div>
+            <div class="colors">
+              <label class="color glass frost flat"><input type="color" id="cFg" value="#2f4786">Pontos</label>
+              <label class="color glass frost flat" id="cFg2Wrap" hidden><input type="color" id="cFg2" value="#b14fc9">Degradê</label>
+              <label class="color glass frost flat"><input type="color" id="cCorner" value="#6e2d85">Cantos</label>
+              <label class="color glass frost flat" id="cBgWrap"><input type="color" id="cBg" value="#ffffff">Fundo</label>
+            </div>
+            <div class="toggles">
+              <div class="toggle"><button class="switch sm glass frost flat" role="switch" aria-checked="false" id="gradSw" aria-label="Degradê"></button>Degradê</div>
+              <div class="toggle"><button class="switch sm glass frost flat" role="switch" aria-checked="false" id="transSw" aria-label="Fundo transparente"></button>Fundo transparente</div>
+            </div>
+
+            <div class="label">Pontos</div>
+            <div class="shapes" id="dotShapes"></div>
+            <div class="label">Moldura dos cantos</div>
+            <div class="shapes" id="cornerShapes"></div>
+            <div class="label">Centro dos cantos</div>
+            <div class="shapes" id="cdotShapes"></div>
+
+            <div class="label">Imagem no centro</div>
+            <input type="file" id="logoFile" accept="image/*" hidden>
+            <button type="button" class="drop glass blue flat" id="drop">
+              <span class="ph" id="logoPh"><span class="ms">add_photo_alternate</span></span>
+              <span style="flex:1"><b id="logoName">Enviar imagem</b><small>Clique ou arraste um PNG, JPG ou SVG</small></span>
+              <span class="icon-btn" id="logoRm" hidden title="Remover imagem"><span class="ms">delete</span></span>
+            </button>
+            <div id="logoOpts" hidden>
+              <div class="range" style="margin-top:18px"><label for="logoSize">Tamanho</label><input type="range" id="logoSize" min="15" max="50" value="35"><output id="logoSizeO">35%</output></div>
+              <div class="range"><label for="logoMargin">Respiro</label><input type="range" id="logoMargin" min="0" max="20" value="6"><output id="logoMarginO">6</output></div>
+              <div class="toggles"><div class="toggle"><button class="switch sm glass frost flat" role="switch" aria-checked="true" id="hideDotsSw" aria-label="Limpar pontos atrás da imagem"></button>Limpar pontos atrás da imagem</div></div>
+            </div>
+
+            <div class="label">Ajustes</div>
+            <div class="range"><label for="qMargin">Margem</label><input type="range" id="qMargin" min="0" max="40" value="12"><output id="qMarginO">12</output></div>
+            <div class="label">Correção de erros</div>
+            <div class="seg glass pink flat" id="eccSeg">
+              <button type="button" data-e="L" aria-pressed="false">Baixa</button>
+              <button type="button" data-e="M" aria-pressed="false">Média</button>
+              <button type="button" data-e="Q" aria-pressed="false">Alta</button>
+              <button type="button" data-e="H" aria-pressed="true">Máxima</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="preview glass frost">
+          <div class="qrbox" id="qrBox"></div>
+          <span class="badge glass mint flat"><span class="ms">all_inclusive</span>Estático · não expira nunca</span>
+          <select class="inp glass frost flat sizes" id="qrSize" aria-label="Tamanho da imagem">
+            <option value="512">512 × 512 px</option>
+            <option value="1024" selected>1024 × 1024 px</option>
+            <option value="2048">2048 × 2048 px</option>
+            <option value="4096">4096 × 4096 px</option>
+          </select>
+          <div class="exp">
+            <button class="big glass coral" id="pngBtn"><span class="ms">image</span>PNG</button>
+            <button class="big glass blue" id="svgBtn"><span class="ms">polyline</span>SVG</button>
+          </div>
+          <button class="big glass frost flat" id="copyBtn" style="margin:0;min-height:54px;font-size:16px"><span class="ms" style="font-size:22px">content_copy</span>Copiar imagem</button>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="apps" id="apps">
+    <div class="label" style="text-align:center;margin:0 0 16px">Instale o Sealoader</div>
+    <div class="app-links">
+      <a class="chip glass flat blue" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Windows-Setup.exe"><span class="ms">desktop_windows</span>Windows</a>
+      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-AppleSilicon.dmg"><span class="ms">laptop_mac</span>Mac (M1–M4)</a>
+      <a class="chip glass flat frost" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Mac-Intel.dmg"><span class="ms">laptop_mac</span>Mac Intel</a>
+      <a class="chip glass flat sun" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Linux-x86_64.AppImage"><span class="ms">terminal</span>Linux</a>
+      <a class="chip glass flat mint" href="https://github.com/opaulovina/sealoader/releases/latest/download/Sealoader-Android.apk"><span class="ms">android</span>Android</a>
+      <button class="chip glass flat pink" id="iosBtn"><span class="ms">phone_iphone</span>iPhone</button>
+    </div>
+    <p class="apps-note" id="iosNote" hidden>No iPhone, abra este site no <b>Safari</b>, toque em <span class="ms" style="font-size:18px;vertical-align:-3px">ios_share</span> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
+  </footer>
+</div>
+
+<div class="veil" id="loginVeil" hidden>
+  <form class="login glass frost" id="loginForm">
+    <svg class="login-ico" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb4ff"/><stop offset="1" stop-color="#7a5cf0"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="12.5" fill="url(#lg)"/><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round"><path d="M32 17v21M23.5 30 32 38.5 40.5 30" stroke-width="5"/><path d="M20 46.5c4-2.6 8-2.6 12 0s8 2.6 12 0" stroke-width="3.6"/></g></svg>
+    <h2>Digite a senha</h2>
+    <p>Para baixar vídeos pelo servidor. O QR code funciona sem senha.</p>
+    <div class="bar glass blue" style="min-height:70px">
+      <input id="loginPw" type="password" placeholder="Senha" autocomplete="current-password" autocapitalize="none" spellcheck="false" aria-label="Senha">
+      <button class="icon-btn go bubble" id="loginGo" style="width:54px;height:54px" aria-label="Entrar"><span class="ms">arrow_forward</span></button>
+    </div>
+    <div class="login-err" id="loginErr" hidden></div>
+    <button type="button" class="login-skip" id="loginSkip">Agora não</button>
+  </form>
+</div>
+<div class="toast glass frost" id="toast"><span class="ms">check_circle</span><span id="toastT"></span></div>
+
+<script src="qr-code-styling.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+// session expired (remote users) -> back to the login page
+if('serviceWorker' in navigator && !window.SealoaderAndroid) navigator.serviceWorker.register('sw.js').catch(() => {});
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('sl.'+k); return v === null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem('sl.'+k, JSON.stringify(v)); }catch{} }
+};
+
+/* ---------- where is the backend? ----------
+   * served by server.py (home server, desktop app): same origin
+   * served by GitHub Pages: backend.json on the `backend` branch says where the home server's tunnel is */
+const REPO = 'opaulovina/sealoader';
+const ON_PAGES = /\.github\.io$/.test(location.hostname);
+const ANDROID = window.SealoaderAndroid || null;
+let API = '', TOKEN = store.get('token', ''), SERVER_OK = !ON_PAGES, DESKTOP = false;
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+async function backendUrl(fresh){
+  const c = store.get('backend', null);
+  if(!fresh && c && Date.now() - c.at < 10 * 60e3) return c.url;
+  let url = null;
+  try{ url = (await (await fetch(`https://api.github.com/repos/${REPO}/contents/backend.json?ref=backend`, {headers:{Accept:'application/vnd.github.raw+json'}, cache:'no-store'})).json()).url; }catch{}
+  if(!url) try{ url = (await (await fetch(`https://raw.githubusercontent.com/${REPO}/backend/backend.json?ts=${Date.now()}`, {cache:'no-store'})).json()).url; }catch{}
+  if(url) store.set('backend', {url, at:Date.now()});
+  return url || (c && c.url);
+}
+async function connect(){
+  if(!ON_PAGES) return true;
+  for(const fresh of [false, true]){
+    const url = await backendUrl(fresh);
+    if(!url) continue;
+    try{ const r = await withTimeout(fetch(url + '/api/version', {cache:'no-store'}), 8000); if(r.ok){ API = url; return true; } }catch{}
+  }
+  return false;
+}
+function api(path, opts = {}){
+  const h = Object.assign({}, opts.headers || {}, TOKEN ? {Authorization:'Bearer ' + TOKEN} : {});
+  return fetch(API + path, Object.assign({}, opts, {headers:h})).then(r => {
+    if(r.status === 401){ showLogin(); throw new Error('Digite a senha para continuar'); }
+    return r;
+  });
+}
+const apiUrl = p => API + p + (TOKEN ? (p.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(TOKEN) : '');
+const b64 = blob => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+function toast(msg, icon='check_circle'){
+  $('#toastT').textContent = msg; $('#toast .ms').textContent = icon;
+  $('#toast').classList.add('show'); clearTimeout(toast.t);
+  toast.t = setTimeout(() => $('#toast').classList.remove('show'), 2600);
+}
+const fmtSize = b => !b ? '' : b > 1e9 ? (b/1e9).toFixed(2)+' GB' : b > 1e6 ? (b/1e6).toFixed(b > 1e8 ? 0 : 1)+' MB' : Math.max(1, Math.round(b/1e3))+' KB';
+const fmtDur = s => { if(!s) return ''; s = Math.round(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h+':'+String(m).padStart(2,'0') : m)+':'+String(x).padStart(2,'0'); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  $('#tab-dl').hidden = t !== 'dl'; $('#tab-qr').hidden = t !== 'qr';
+  store.set('tab', t);
+  if(t === 'qr') renderQR();
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+/* ---------- settings ---------- */
+$('#gearBtn').onclick = e => { e.stopPropagation(); const p = $('#pop'); p.hidden = !p.hidden; $('#gearBtn').setAttribute('aria-expanded', !p.hidden); };
+document.addEventListener('click', e => { if(!$('#pop').hidden && !$('#pop').contains(e.target)) { $('#pop').hidden = true; $('#gearBtn').setAttribute('aria-expanded', false); } });
+$('#cookieSel').value = store.get('cookies', '');
+$('#cookieSel').onchange = e => { store.set('cookies', e.target.value); toast(e.target.value ? 'Usando cookies do '+e.target.selectedOptions[0].text : 'Cookies desativados'); };
+api('/api/share').then(r => r.ok ? r.json() : null).then(sh => {
+  if(!sh) return;
+  if(!sh.url){ $('#shareOff').hidden = false; return; }
+  $('#share').hidden = false; $('#shareUrl').textContent = sh.url; $('#sharePw').textContent = sh.password;
+  new QRCodeStyling({width:150, height:150, type:'svg', data:sh.url, margin:0, qrOptions:{errorCorrectionLevel:'M'},
+    dotsOptions:{type:'rounded', color:'#2f4786'}, cornersSquareOptions:{type:'extra-rounded', color:'#6e2d85'}, cornersDotOptions:{type:'dot', color:'#6e2d85'}}).append($('#shareQr'));
+  const copy = async (t, msg) => { try{ await navigator.clipboard.writeText(t); toast(msg); }catch{ toast('Não deu para copiar', 'error'); } };
+  document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy($('#'+b.dataset.copy).textContent, 'Copiado'));
+  $('#shareMsg').onclick = () => copy(`Oi! Use o Sealoader pra baixar vídeos do YouTube, Instagram, TikTok, X e Telegram e criar QR codes 💜\n\n🔗 ${sh.url}\n🔑 Senha: ${sh.password}\n\n💻 No computador: no fim da página tem o app para Windows, Mac e Linux (funciona sozinho, sem senha).\n📱 Android: instale o app pelo mesmo link.\n🍎 iPhone: abra o link no Safari → Compartilhar → Adicionar à Tela de Início.`, 'Convite copiado');
+}).catch(() => {});
+function loadVersion(){
+  api('/api/version').then(r => r.json()).then(v => {
+    $('#ver').textContent = `yt-dlp ${v.ytdlp} · ffmpeg ${v.ffmpeg ? 'ok' : 'ausente'} · runtime JS ${v.js ? 'ok' : 'ausente'}`;
+    if(v.desktop && !DESKTOP){
+      // desktop app: tell the local server a tab is still open, it quits on its own afterwards
+      DESKTOP = true; document.body.classList.add('is-desktop');
+      const ping = () => api('/api/ping', {method:'POST'}).catch(() => {});
+      ping(); setInterval(ping, 30e3);
+    }
+  }).catch(() => {});
+}
+
+/* ================= DOWNLOADER ================= */
+const PLATFORMS = [
+  {k:'youtube',  n:'YouTube',   c:'coral', re:/(youtube\.com|youtu\.be)/i},
+  {k:'tiktok',   n:'TikTok',    c:'mint',  re:/tiktok\.com/i},
+  {k:'instagram',n:'Instagram', c:'pink',  re:/instagram\.com/i},
+  {k:'twitter',  n:'X',         c:'frost', re:/(twitter\.com|x\.com)/i},
+  {k:'telegram', n:'Telegram',  c:'blue',  re:/(t\.me|telegram\.(me|org))/i},
+  {k:'tokyvideo',n:'TokyVideo', c:'sun',   re:/tokyvideo\.com/i},
+];
+$('#platforms').innerHTML = PLATFORMS.map(p => `<span class="chip glass flat ${p.c}" data-k="${p.k}"><span class="dot"></span>${p.n}</span>`).join('')
+  + `<span class="chip glass flat frost" data-k="other"><span class="dot"></span>+ 1.800 sites</span>`;
+function detect(u){ const p = PLATFORMS.find(p => p.re.test(u)); return p ? p.k : (/^https?:\/\//.test(u) ? 'other' : null); }
+function markPlatform(){
+  const k = detect($('#url').value.trim());
+  document.querySelectorAll('#platforms .chip').forEach(c => c.classList.toggle('on', c.dataset.k === k));
+  $('#clearBtn').hidden = !$('#url').value;
+}
+$('#url').addEventListener('input', markPlatform);
+$('#clearBtn').onclick = () => { $('#url').value = ''; markPlatform(); $('#url').focus(); };
+$('#pasteBtn').onclick = async () => {
+  try{ const t = (ANDROID ? ANDROID.getClipboard() : await navigator.clipboard.readText()).trim(); if(t){ $('#url').value = t; markPlatform(); fetchInfo(); } }
+  catch{ $('#url').focus(); toast('Use Ctrl+V para colar', 'content_paste'); }
+};
+$('#url').addEventListener('paste', () => setTimeout(() => { markPlatform(); if(/^https?:\/\/\S+$/.test($('#url').value.trim())) fetchInfo(); }, 0));
+
+let info = null, sel = {kind:'video', height:0, container:'mp4', audio:'mp3', bitrate:'320', format_id:null}, busy = false;
+
+function showError(msg){
+  $('#errBox').innerHTML = msg ? `<div class="err glass sun flat"><span class="ms">error</span><div>${esc(msg)}</div></div>` : '';
+}
+function setLoading(on){
+  $('#goBtn').disabled = on;
+  $('#goBtn .ms').textContent = on ? 'progress_activity' : 'arrow_forward';
+  $('#goBtn .ms').classList.toggle('spin', on);
+}
+
+$('#urlForm').onsubmit = e => { e.preventDefault(); fetchInfo(); };
+async function fetchInfo(){
+  const url = $('#url').value.trim();
+  if(!url || $('#goBtn').disabled) return;
+  showError(''); setLoading(true);
+  try{
+    if(!SERVER_OK) throw new Error(OFFLINE_MSG);
+    const r = await api('/api/info', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({url, cookies:store.get('cookies','')})});
+    const d = await r.json();
+    if(d.error) throw new Error(d.error);
+    info = d; info.url = url; renderInfo();
+  }catch(err){
+    if(!$('#loginVeil').hidden){ afterLogin = fetchInfo; return; }
+    $('#result').hidden = true; showError(err.message === 'Failed to fetch' ? OFFLINE_MSG : (err.message || 'Não foi possível ler este link'));
+  }
+  finally{ setLoading(false); }
+}
+
+function opt(label, sub, pressed, data){
+  return `<button type="button" class="opt glass frost flat" aria-pressed="${pressed}" ${Object.entries(data).map(([k,v]) => `data-${k}="${esc(v)}"`).join(' ')}>${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</button>`;
+}
+const resName = h => h >= 4320 ? '8K' : h >= 2160 ? '4K' : h >= 1440 ? '2K' : h ? h+'p' : 'Original';
+
+function renderInfo(){
+  $('#result').hidden = false; $('#prog').hidden = true; $('#dlBtn').hidden = false;
+  $('#thumb').src = info.thumbnail ? apiUrl('/api/thumb?u='+encodeURIComponent(info.thumbnail)) : '';
+  $('#thumb').style.visibility = info.thumbnail ? 'visible' : 'hidden';
+  $('#title').textContent = info.title;
+  const plat = PLATFORMS.find(p => info.extractor.includes(p.k));
+  $('#meta').innerHTML = [
+    plat && `<span><span class="ms">public</span>${plat.n}</span>`,
+    info.uploader && `<span><span class="ms">person</span>${esc(info.uploader)}</span>`,
+    info.duration && `<span><span class="ms">schedule</span>${fmtDur(info.duration)}</span>`,
+  ].filter(Boolean).join('');
+  sel.height = info.heights[0] ? info.heights[0].height : 0;
+  sel.format_id = null;
+  setKind(info.heights.length ? 'video' : 'audio');
+  renderOpts();
+  const rows = info.raw.slice().reverse();
+  $('#rawTable').innerHTML = '<tbody>' + rows.map(f => `<tr data-id="${esc(f.id)}"><td><b>${esc(f.id)}</b></td><td>${esc(f.ext)}</td><td>${esc(f.res)}</td><td>${esc(f.note)}</td><td>${f.vcodec && f.vcodec !== 'none' ? esc(f.vcodec.split('.')[0]) : ''}${f.acodec && f.acodec !== 'none' && f.vcodec !== 'none' && f.vcodec ? ' + ' : ''}${f.acodec && f.acodec !== 'none' ? esc(f.acodec.split('.')[0]) : ''}</td><td>${fmtSize(f.size)}</td></tr>`).join('') + '</tbody>';
+  $('#rawTable').querySelectorAll('tr').forEach(tr => tr.onclick = () => {
+    $('#rawTable').querySelectorAll('tr').forEach(x => x.classList.remove('sel'));
+    tr.classList.add('sel'); sel.format_id = tr.dataset.id; updateLabel();
+  });
+  updateLabel();
+}
+
+function renderOpts(){
+  $('#resOpts').innerHTML = info.heights.map(h => opt(resName(h.short ?? h.height), [h.fps > 30 ? Math.round(h.fps)+'fps' : '', fmtSize(h.size) && '~'+fmtSize(h.size)].filter(Boolean).join(' · '), h.height === sel.height, {h:h.height})).join('');
+  $('#contOpts').innerHTML = [['mp4','Compatível com tudo'],['webm','Leve, ideal p/ web'],['mkv','Qualidade máxima']].map(([c,s]) => opt(c.toUpperCase(), s, c === sel.container, {c})).join('');
+  $('#audOpts').innerHTML = [['mp3','Universal'],['m4a','AAC, ótima qualidade'],['opus','Menor tamanho'],['wav','Sem compressão'],['flac','Sem perdas']].map(([a,s]) => opt(a.toUpperCase(), s, a === sel.audio, {a})).join('');
+  $('#brOpts').innerHTML = ['320','256','192','128'].map(b => opt(b+' kbps', '', b === sel.bitrate, {b})).join('');
+  $('#brWrap').hidden = sel.audio !== 'mp3';
+  $('#resOpts').querySelectorAll('.opt').forEach(b => b.onclick = () => { sel.height = +b.dataset.h; renderOpts(); updateLabel(); });
+  $('#contOpts').querySelectorAll('.opt').forEach(b => b.onclick = () => { sel.container = b.dataset.c; renderOpts(); updateLabel(); });
+  $('#audOpts').querySelectorAll('.opt').forEach(b => b.onclick = () => { sel.audio = b.dataset.a; renderOpts(); updateLabel(); });
+  $('#brOpts').querySelectorAll('.opt').forEach(b => b.onclick = () => { sel.bitrate = b.dataset.b; renderOpts(); updateLabel(); });
+}
+
+function setKind(k){
+  sel.kind = k;
+  document.querySelectorAll('#kindSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.kind === k));
+  $('#pane-video').hidden = k !== 'video'; $('#pane-audio').hidden = k !== 'audio'; $('#pane-raw').hidden = k !== 'raw';
+  updateLabel();
+}
+document.querySelectorAll('#kindSeg button').forEach(b => b.onclick = () => setKind(b.dataset.kind));
+
+function updateLabel(){
+  let t;
+  if(sel.kind === 'video'){
+    const h = info.heights.find(x => x.height === sel.height);
+    t = `Baixar <small>${resName(h ? (h.short ?? h.height) : sel.height)} · ${sel.container.toUpperCase()}${h && h.size ? ' · ~'+fmtSize(h.size) : ''}</small>`;
+  } else if(sel.kind === 'audio'){
+    t = `Baixar áudio <small>${sel.audio.toUpperCase()}${sel.audio === 'mp3' ? ' · '+sel.bitrate+' kbps' : ''}</small>`;
+  } else {
+    t = sel.format_id ? `Baixar <small>formato ${esc(sel.format_id)}</small>` : 'Escolha um formato na lista';
+  }
+  $('#dlLabel').innerHTML = t;
+  $('#dlBtn').disabled = busy || (sel.kind === 'raw' && !sel.format_id);
+}
+
+$('#dlBtn').onclick = async () => {
+  if(busy) return;
+  busy = true; updateLabel(); showError('');
+  const body = {url:info.url, kind:sel.kind, height:sel.height, container:sel.container, audio:sel.audio, bitrate:sel.bitrate, format_id:sel.format_id, cookies:store.get('cookies','')};
+  $('#dlBtn').hidden = true; $('#prog').hidden = false;
+  setProg(0, 'Preparando…', 'Conectando ao site', 'downloading');
+  try{
+    const r = await api('/api/download', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
+    const {job, error} = await r.json();
+    if(error) throw new Error(error);
+    await poll(job, info.title);
+  }catch(err){ if($('#loginVeil').hidden) showError(err.message === 'Failed to fetch' ? OFFLINE_MSG : err.message); $('#prog').hidden = true; $('#dlBtn').hidden = false; }
+  finally{ busy = false; updateLabel(); }
+};
+
+function setProg(p, t1, t2, icon){
+  $('#progFill').style.width = p+'%';
+  $('#progPct').textContent = Math.floor(p)+'%';
+  $('#progT1').textContent = t1; $('#progT2').textContent = t2 || '';
+  $('#progIcon').textContent = icon;
+  $('#progIcon').classList.toggle('spin', icon === 'progress_activity');
+}
+
+function poll(job, title){
+  return new Promise((resolve, reject) => {
+    const tick = async () => {
+      let j;
+      try{ j = await (await api('/api/job/'+job)).json(); }catch{ return setTimeout(tick, 1500); }
+      if(j.status === 'error') return reject(new Error(j.error));
+      if(j.status === 'done'){
+        setProg(100, 'Pronto!', `${j.filename} · ${fmtSize(j.size)}`, 'check_circle');
+        saveFile(job); addHistory(job, j.filename, j.size);
+        setTimeout(() => { $('#prog').hidden = true; $('#dlBtn').hidden = false; }, 2600);
+        return resolve();
+      }
+      if(j.stage === 'process') setProg(99, j.label || 'Processando…', 'Quase lá, isso pode levar alguns segundos', 'progress_activity');
+      else if(j.stage === 'download'){
+        const sp = j.speed ? fmtSize(j.speed)+'/s' : '';
+        const eta = j.eta != null ? 'faltam '+fmtDur(j.eta) : '';
+        const tot = j.total ? `${fmtSize(j.downloaded)} de ${fmtSize(j.total)}` : fmtSize(j.downloaded);
+        setProg(j.percent || 0, j.part === 'áudio' ? 'Baixando áudio' : 'Baixando', [tot, sp, eta].filter(Boolean).join(' · '), 'downloading');
+      }
+      setTimeout(tick, 600);
+    };
+    tick();
+  });
+}
+function saveFile(job){ const a = document.createElement('a'); a.href = apiUrl('/api/file/'+job); a.download = ''; document.body.appendChild(a); a.click(); a.remove(); }
+function addHistory(job, name, size){
+  const el = document.createElement('div');
+  el.className = 'hist glass frost flat';
+  el.innerHTML = `<span class="ms" style="color:var(--mint-ink)">task_alt</span><span class="n">${esc(name)}</span><span class="s">${fmtSize(size)}</span><button class="icon-btn bubble" title="Baixar de novo"><span class="ms">download</span></button>`;
+  el.querySelector('button').onclick = () => saveFile(job);
+  $('#history').prepend(el);
+  toast('Download concluído');
+}
+
+/* ================= QR CODE ================= */
+const qrState = Object.assign({
+  type:'url', custom:false, fg:'#2f4786', fg2:'#b14fc9', corner:'#6e2d85', bg:'#ffffff', grad:false, trans:false,
+  dot:'rounded', cornerSq:'extra-rounded', cornerDot:'dot', logoSize:35, logoMargin:6, hideDots:true, margin:12, ecc:'H',
+  f:{url:'', text:'', ssid:'', pass:'', sec:'WPA', hidden:false, email:'', subject:'', body:'', waNum:'', waText:'', tel:''}
+}, store.get('qr', {}));
+qrState.f = Object.assign({url:'', text:'', ssid:'', pass:'', sec:'WPA', hidden:false, email:'', subject:'', body:'', waNum:'', waText:'', tel:''}, qrState.f);
+let logo = null;
+
+const FIELDS = {
+  url:[['url','Link','https://seusite.com.br','url']],
+  text:[['text','Texto','Escreva qualquer coisa…','area']],
+  wifi:[['ssid','Nome da rede (SSID)','MinhaCasa'],['pass','Senha','••••••••'],['sec','Segurança','','sec']],
+  email:[['email','Para','nome@exemplo.com','email'],['subject','Assunto',''],['body','Mensagem','','area']],
+  wa:[['waNum','Número com DDD e país','55 11 91234-5678','tel'],['waText','Mensagem pronta (opcional)','Olá!','area']],
+  tel:[['tel','Número de telefone','+55 11 91234-5678','tel']],
+};
+function renderFields(){
+  const f = qrState.f;
+  $('#qrFields').innerHTML = FIELDS[qrState.type].map(([k,l,ph,kind]) => {
+    if(kind === 'area') return `<label class="field"><span>${l}</span><textarea class="inp glass blue" data-k="${k}" placeholder="${esc(ph)}">${esc(f[k])}</textarea></label>`;
+    if(kind === 'sec') return `<label class="field"><span>${l}</span><select class="inp glass blue" data-k="sec"><option value="WPA">WPA / WPA2 / WPA3</option><option value="WEP">WEP</option><option value="nopass">Sem senha</option></select></label>`;
+    return `<label class="field"><span>${l}</span><input class="inp glass blue" data-k="${k}" type="${kind === 'email' ? 'email' : kind === 'tel' ? 'tel' : kind === 'url' ? 'url' : 'text'}" placeholder="${esc(ph)}" value="${esc(f[k])}" spellcheck="false"></label>`;
+  }).join('');
+  const s = $('#qrFields [data-k=sec]'); if(s) s.value = f.sec;
+  $('#qrFields').querySelectorAll('[data-k]').forEach(el => el.addEventListener('input', () => { f[el.dataset.k] = el.value; renderQR(); }));
+  document.querySelectorAll('#qrType button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === qrState.type));
+}
+document.querySelectorAll('#qrType button').forEach(b => b.onclick = () => { qrState.type = b.dataset.t; renderFields(); renderQR(); });
+
+const wifiEsc = s => s.replace(/([\\;,:"])/g, '\\$1');
+function qrData(){
+  const f = qrState.f;
+  switch(qrState.type){
+    case 'url': { const u = f.url.trim(); return u ? (/^[a-z][a-z0-9+.-]*:/i.test(u) ? u : 'https://'+u) : ''; }
+    case 'text': return f.text;
+    case 'wifi': return f.ssid ? `WIFI:T:${f.sec};S:${wifiEsc(f.ssid)};${f.sec !== 'nopass' ? 'P:'+wifiEsc(f.pass)+';' : ''};` : '';
+    case 'email': { if(!f.email.trim()) return ''; const q = new URLSearchParams(); if(f.subject) q.set('subject', f.subject); if(f.body) q.set('body', f.body); const qs = q.toString().replace(/\+/g, '%20'); return 'mailto:'+f.email.trim()+(qs ? '?'+qs : ''); }
+    case 'wa': { const n = f.waNum.replace(/\D/g, ''); return n ? 'https://wa.me/'+n+(f.waText ? '?text='+encodeURIComponent(f.waText) : '') : ''; }
+    case 'tel': { const n = f.tel.replace(/[^\d+]/g, ''); return n ? 'tel:'+n : ''; }
+  }
+}
+
+function qrOptions(size){
+  const data = qrData() || 'https://exemplo.com';
+  const s = qrState;
+  if(!s.custom) return {width:size, height:size, data, margin:Math.round(size*0.04), qrOptions:{errorCorrectionLevel:'M'},
+    dotsOptions:{type:'square', color:'#000000'}, backgroundOptions:{color:'#ffffff'},
+    cornersSquareOptions:{type:'square', color:'#000000'}, cornersDotOptions:{type:'square', color:'#000000'}};
+  const scale = size/300;
+  const o = {
+    width:size, height:size, data, margin:Math.round(s.margin*scale),
+    qrOptions:{errorCorrectionLevel: logo ? (s.ecc === 'L' || s.ecc === 'M' ? 'Q' : s.ecc) : s.ecc},
+    dotsOptions: s.grad ? {type:s.dot, gradient:{type:'linear', rotation:Math.PI/4, colorStops:[{offset:0, color:s.fg},{offset:1, color:s.fg2}]}} : {type:s.dot, color:s.fg},
+    backgroundOptions:{color: s.trans ? 'transparent' : s.bg},
+    cornersSquareOptions:{type:s.cornerSq, color:s.corner},
+    cornersDotOptions:{type:s.cornerDot, color:s.corner},
+  };
+  if(logo){ o.image = logo.url; o.imageOptions = {hideBackgroundDots:s.hideDots, imageSize:s.logoSize/100, margin:Math.round(s.logoMargin*scale), crossOrigin:'anonymous'}; }
+  return o;
+}
+
+const PREV = 262;
+function renderQR(){
+  // a fresh instance each time: update() deep-merges and would keep stale gradients/images
+  $('#qrBox').replaceChildren();
+  new QRCodeStyling({...qrOptions(PREV), type:'svg'}).append($('#qrBox'));
+  $('#qrBox').classList.toggle('checker', qrState.custom && qrState.trans);
+  const empty = !qrData(); $('#qrBox').classList.toggle('empty', empty);
+  let hint = $('#qrBox .hint'); if(empty && !hint){ hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Preencha o conteúdo para gerar o QR code'; $('#qrBox').appendChild(hint); } else if(!empty && hint) hint.remove();
+  const st = {...qrState}; store.set('qr', st);
+}
+
+/* custom controls */
+function bindSwitch(id, key, after){
+  const el = $(id);
+  const sync = () => { el.setAttribute('aria-checked', !!qrState[key]); el.classList.toggle('pink', !!qrState[key]); el.classList.toggle('frost', !qrState[key]); };
+  el.onclick = () => { qrState[key] = !qrState[key]; sync(); after && after(); renderQR(); };
+  sync(); after && after();
+}
+bindSwitch('#customSw', 'custom', () => $('#customPanel').hidden = !qrState.custom);
+bindSwitch('#gradSw', 'grad', () => $('#cFg2Wrap').hidden = !qrState.grad);
+bindSwitch('#transSw', 'trans', () => $('#cBgWrap').hidden = qrState.trans);
+bindSwitch('#hideDotsSw', 'hideDots');
+[['#cFg','fg'],['#cFg2','fg2'],['#cCorner','corner'],['#cBg','bg']].forEach(([id,k]) => { $(id).value = qrState[k]; $(id).addEventListener('input', e => { qrState[k] = e.target.value; renderQR(); }); });
+[['#logoSize','logoSize','%'],['#logoMargin','logoMargin',''],['#qMargin','margin','']].forEach(([id,k,u]) => {
+  const el = $(id); el.value = qrState[k]; $(id+'O').textContent = qrState[k]+u;
+  el.addEventListener('input', () => { qrState[k] = +el.value; $(id+'O').textContent = el.value+u; renderQR(); });
+});
+document.querySelectorAll('#eccSeg button').forEach(b => {
+  b.setAttribute('aria-pressed', b.dataset.e === qrState.ecc);
+  b.onclick = () => { qrState.ecc = b.dataset.e; document.querySelectorAll('#eccSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderQR(); };
+});
+
+/* shape pickers with mini previews */
+const SH = {
+  square:'<rect x="5" y="5" width="12" height="12"/><rect x="21" y="5" width="12" height="12"/><rect x="5" y="21" width="12" height="12"/><rect x="21" y="21" width="12" height="12"/>',
+  dots:'<circle cx="11" cy="11" r="6"/><circle cx="27" cy="11" r="6"/><circle cx="11" cy="27" r="6"/><circle cx="27" cy="27" r="6"/>',
+  rounded:'<rect x="5" y="5" width="12" height="12" rx="4"/><rect x="21" y="5" width="12" height="12" rx="4"/><rect x="5" y="21" width="12" height="12" rx="4"/><rect x="21" y="21" width="12" height="12" rx="4"/>',
+  'extra-rounded':'<rect x="5" y="5" width="12" height="12" rx="6"/><path d="M21 11a6 6 0 0 1 6-6h6v6a6 6 0 0 1-6 6h-6z"/><rect x="5" y="21" width="12" height="12" rx="6"/><rect x="21" y="21" width="12" height="12" rx="6"/>',
+  classy:'<path d="M5 5h12v6a6 6 0 0 1-6 6H5z"/><path d="M27 5h6v12h-12v-6a6 6 0 0 1 6-6z"/><path d="M5 27a6 6 0 0 1 6-6h6v12H5z"/><path d="M21 21h12v6a6 6 0 0 1-6 6h-6z"/>',
+  'classy-rounded':'<path d="M5 9a4 4 0 0 1 4-4h8v8a4 4 0 0 1-4 4H5z"/><path d="M21 9a4 4 0 0 1 4-4h8v8a4 4 0 0 1-4 4h-8z"/><path d="M5 25a4 4 0 0 1 4-4h8v8a4 4 0 0 1-4 4H5z"/><path d="M21 25a4 4 0 0 1 4-4h8v8a4 4 0 0 1-4 4h-8z"/>',
+};
+const CS = {
+  square:'<path fill-rule="evenodd" d="M4 4h30v30H4zM10 10v18h18V10z"/>',
+  dot:'<path fill-rule="evenodd" d="M19 4a15 15 0 1 1 0 30 15 15 0 0 1 0-30zm0 6a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/>',
+  'extra-rounded':'<path fill-rule="evenodd" d="M14 4h10a10 10 0 0 1 10 10v10a10 10 0 0 1-10 10H14A10 10 0 0 1 4 24V14A10 10 0 0 1 14 4zm1 6a5 5 0 0 0-5 5v8a5 5 0 0 0 5 5h8a5 5 0 0 0 5-5v-8a5 5 0 0 0-5-5z"/>',
+};
+const CD = { square:'<rect x="11" y="11" width="16" height="16"/>', dot:'<circle cx="19" cy="19" r="8.5"/>' };
+const NAMES = {square:'Quadrado', dots:'Bolinhas', dot:'Círculo', rounded:'Suave', 'extra-rounded':'Arredondado', classy:'Folha', 'classy-rounded':'Folha suave'};
+function shapePicker(el, map, key){
+  el.innerHTML = Object.entries(map).map(([k,svg]) => `<button type="button" class="shape glass frost flat" data-v="${k}" aria-pressed="${qrState[key] === k}"><svg viewBox="0 0 38 38" fill="currentColor">${svg}</svg>${NAMES[k]}</button>`).join('');
+  el.querySelectorAll('.shape').forEach(b => b.onclick = () => { qrState[key] = b.dataset.v; el.querySelectorAll('.shape').forEach(x => x.setAttribute('aria-pressed', x === b)); renderQR(); });
+}
+shapePicker($('#dotShapes'), SH, 'dot');
+shapePicker($('#cornerShapes'), CS, 'cornerSq');
+shapePicker($('#cdotShapes'), CD, 'cornerDot');
+
+/* logo upload */
+function loadLogo(file){
+  if(!file || !file.type.startsWith('image/')) return toast('Escolha um arquivo de imagem', 'error');
+  const r = new FileReader();
+  r.onload = () => {
+    logo = {url:r.result, name:file.name};
+    $('#logoPh').innerHTML = `<img src="${r.result}" alt="">`;
+    $('#logoName').textContent = file.name; $('#logoRm').hidden = false; $('#logoOpts').hidden = false;
+    renderQR();
+  };
+  r.readAsDataURL(file);
+}
+$('#drop').onclick = e => { if(e.target.closest('#logoRm')) return; $('#logoFile').click(); };
+$('#logoFile').onchange = e => loadLogo(e.target.files[0]);
+$('#logoRm').onclick = e => {
+  e.stopPropagation(); logo = null; $('#logoFile').value = '';
+  $('#logoPh').innerHTML = '<span class="ms">add_photo_alternate</span>'; $('#logoName').textContent = 'Enviar imagem';
+  $('#logoRm').hidden = true; $('#logoOpts').hidden = true; renderQR();
+};
+['dragenter','dragover'].forEach(ev => $('#drop').addEventListener(ev, e => { e.preventDefault(); $('#drop').classList.add('over'); }));
+['dragleave','drop'].forEach(ev => $('#drop').addEventListener(ev, e => { e.preventDefault(); $('#drop').classList.remove('over'); }));
+$('#drop').addEventListener('drop', e => loadLogo(e.dataTransfer.files[0]));
+
+/* export */
+function ensureData(){ if(!qrData()){ toast('Preencha o conteúdo do QR code primeiro', 'edit'); return false; } return true; }
+function exporter(type){ const size = +$('#qrSize').value; return new QRCodeStyling({...qrOptions(size), type: type === 'svg' ? 'svg' : 'canvas'}); }
+const fileName = () => 'qrcode-' + qrState.type + '-' + new Date().toISOString().slice(0,10);
+async function exportQR(ext){
+  if(!ensureData()) return;
+  const qr = exporter(ext);
+  if(!ANDROID) return qr.download({name:fileName(), extension:ext});
+  const data = await b64(await qr.getRawData(ext));
+  ANDROID.saveBase64(fileName() + '.' + ext, ext === 'svg' ? 'image/svg+xml' : 'image/png', data);
+}
+$('#pngBtn').onclick = () => exportQR('png');
+$('#svgBtn').onclick = () => exportQR('svg');
+$('#copyBtn').onclick = async () => {
+  if(!ensureData()) return;
+  try{
+    const blob = await exporter('png').getRawData('png');
+    if(ANDROID){ ANDROID.shareImage(fileName() + '.png', await b64(blob)); return; }
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Imagem copiada');
+  }
+  catch{ toast('Seu navegador não permitiu copiar', 'error'); }
+};
+
+/* ---------- login & server status ---------- */
+const OFFLINE_MSG = 'O servidor está desligado agora. Tente de novo mais tarde ou instale o app no computador.';
+let afterLogin = null;
+function showLogin(then){
+  afterLogin = then || afterLogin;
+  if(!$('#loginVeil').hidden) return;
+  $('#loginVeil').hidden = false; $('#loginErr').hidden = true; $('#loginPw').value = '';
+  setTimeout(() => $('#loginPw').focus(), 50);
+}
+$('#loginSkip').onclick = () => { $('#loginVeil').hidden = true; afterLogin = null; };
+$('#loginForm').onsubmit = async e => {
+  e.preventDefault();
+  const pw = $('#loginPw').value.trim(); if(!pw) return;
+  $('#loginGo .ms').textContent = 'progress_activity'; $('#loginGo .ms').classList.add('spin');
+  try{
+    const r = await fetch(API + '/api/login', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({password:pw})});
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error || 'Senha incorreta');
+    TOKEN = d.token; store.set('token', TOKEN);
+    $('#loginVeil').hidden = true; toast('Pronto, pode baixar!');
+    const f = afterLogin; afterLogin = null; f && f();
+  }catch(err){ $('#loginErr').textContent = err.message === 'Failed to fetch' ? OFFLINE_MSG : err.message; $('#loginErr').hidden = false; }
+  finally{ $('#loginGo .ms').textContent = 'arrow_forward'; $('#loginGo .ms').classList.remove('spin'); }
+};
+async function checkServer(){
+  const ok = await connect();
+  SERVER_OK = ok;
+  $('#offline').hidden = ok; $('#urlForm').style.opacity = ok ? '' : '.6';
+  if(ok){ loadVersion(); if(ON_PAGES && !TOKEN) showLogin(); }
+  return ok;
+}
+$('#iosBtn').onclick = () => { $('#iosNote').hidden = !$('#iosNote').hidden; };
+if(ANDROID) document.body.classList.add('is-android');
+
+renderFields();
+const qs = new URLSearchParams(location.search);
+showTab(qs.get('tab') || store.get('tab', 'dl'));
+checkServer().then(ok => {
+  if(qs.get('url')){ showTab('dl'); $('#url').value = qs.get('url'); markPlatform(); if(ok) TOKEN || !ON_PAGES ? fetchInfo() : showLogin(fetchInfo); }
+});
+if(ON_PAGES) setInterval(() => { if(!SERVER_OK) checkServer(); }, 30e3);
+</script>
+</body>
+</html>

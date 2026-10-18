@@ -1,0 +1,5 @@
+#!/bin/bash
+# Garante que o servidor e o túnel estão rodando e abre o Sealoader no navegador.
+systemctl --user start sealoader.service sealoader-tunnel.service
+for i in $(seq 1 40); do curl -s http://127.0.0.1:8765/api/version >/dev/null && break; sleep 0.25; done
+xdg-open "http://127.0.0.1:8765/" >/dev/null 2>&1 &

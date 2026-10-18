@@ -1,0 +1,12 @@
+[Unit]
+Description=Sealoader — túnel público (Cloudflare)
+After=network-online.target sealoader.service
+Wants=sealoader.service
+
+[Service]
+ExecStart=@ROOT@/bin/cloudflared tunnel --no-autoupdate --metrics 127.0.0.1:20241 --url http://127.0.0.1:8765
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

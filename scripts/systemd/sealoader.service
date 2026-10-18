@@ -1,0 +1,13 @@
+[Unit]
+Description=Sealoader (downloader de vídeos + QR code)
+After=network-online.target
+
+[Service]
+WorkingDirectory=@ROOT@
+Environment=PATH=@ROOT@/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=@ROOT@/venv/bin/python server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
