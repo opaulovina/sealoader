@@ -232,8 +232,10 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 .app-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
 .app-links .chip{text-decoration:none;font-size:15px;padding:10px 16px;cursor:pointer}
 .app-links .chip .ms{font-size:20px}
+.credit{margin:40px 0 0;font-size:12px;color:var(--ink-3);text-align:center}
+.credit a{color:inherit}
 .apps-note{max-width:460px;text-align:center;color:var(--ink-2);font-size:15px;line-height:1.5;margin:22px 0 0}
-body.is-desktop .apps,body.is-android .apps{display:none}
+body.is-desktop .app-links,body.is-desktop .apps>.label,body.is-android .app-links,body.is-android .apps>.label{display:none}
 .veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;place-items:center;padding:16px}
 .login{width:min(460px,100%);border-radius:40px;padding:30px 24px 18px;text-align:center}
 .login-ico{width:72px;height:72px;filter:drop-shadow(0 8px 6px rgba(70,66,80,.16))}
@@ -460,6 +462,7 @@ body.is-desktop .apps,body.is-android .apps{display:none}
       <button class="chip glass flat pink" id="iosBtn"><span class="ms">phone_iphone</span>iPhone</button>
     </div>
     <p class="apps-note" id="iosNote" hidden>No iPhone, abra este site no <b>Safari</b>, toque em <span class="ms" style="font-size:18px;vertical-align:-3px">ios_share</span> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
+    <p class="credit">Visual inspirado em <a href="https://www.figma.com/community/file/1691510784131240473/google-sea-glass" target="_blank" rel="noopener">Google Sea Glass</a> de Julian (CC BY 4.0) · downloads por <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a></p>
   </footer>
 </div>
 

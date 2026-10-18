@@ -1,0 +1,46 @@
+plugins { id 'com.android.application' }
+
+// Chave de assinatura: android/keystore/release.jks + keystore.properties (local, fora do git)
+// ou variáveis de ambiente (GitHub Actions). Sem ela, gera um APK de debug.
+def ksProps = new Properties()
+def ksFile = rootProject.file('keystore/keystore.properties')
+if (ksFile.exists()) ksFile.withInputStream { ksProps.load(it) }
+def ks = { String k -> System.getenv('SEALOADER_' + k.toUpperCase()) ?: ksProps.getProperty(k) }
+
+android {
+    namespace 'io.github.opaulovina.sealoader'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'io.github.opaulovina.sealoader'
+        minSdk 29
+        targetSdk 36
+        versionCode Integer.parseInt(System.getenv('SEALOADER_VERSION_CODE') ?: '1')
+        versionName = (System.getenv('SEALOADER_VERSION') ?: '1.0.0').replaceFirst('^v', '')
+    }
+
+    signingConfigs {
+        release {
+            def store = ks('store_file') ?: 'keystore/release.jks'
+            storeFile rootProject.file(store)
+            storePassword ks('store_password')
+            keyAlias ks('key_alias') ?: 'sealoader'
+            keyPassword ks('key_password') ?: ks('store_password')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig rootProject.file(ks('store_file') ?: 'keystore/release.jks').exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    // a mesma interface do site, embutida no app
+    sourceSets { main { assets.srcDirs = ['../../web'] } }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

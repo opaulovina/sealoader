@@ -542,7 +542,7 @@ def serve(port=PORT):
     else:
         if not getattr(sys, 'frozen', False):
             threading.Thread(target=update_ytdlp, daemon=True).start()
-        if CONFIG.get('github_token') and CONFIG.get('github_repo'):
+        if CONFIG.get('github_token') and CONFIG.get('github_repo') and CONFIG.get('publish_backend'):
             threading.Thread(target=publish_backend, daemon=True).start()
     app.run(host='127.0.0.1', port=port, threaded=True)
 

@@ -1,0 +1,76 @@
+# Gera os apps de Windows, Mac (Apple Silicon e Intel), Linux e Android e publica numa Release.
+# Dispara ao enviar uma tag:  git tag v1.0.0 && git push origin v1.0.0
+# Os links "releases/latest/download/..." do site sempre apontam para a release mais nova.
+name: Apps (release)
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-22.04, name: linux}
+          - {os: windows-latest, name: windows}
+          - {os: macos-14, name: mac-arm64}
+          - {os: macos-15-intel, name: mac-intel}
+    runs-on: ${{ matrix.os }}
+    env:
+      SEALOADER_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Dependências
+        run: python -m pip install -r requirements.txt pyinstaller pillow
+      - name: Inno Setup
+        if: runner.os == 'Windows'
+        run: choco install innosetup --no-progress -y
+      - name: Build
+        run: python desktop/build.py
+      - name: Teste do app empacotado
+        run: python desktop/smoke_test.py
+      - uses: actions/upload-artifact@v4
+        with: {name: '${{ matrix.name }}', path: 'dist/*', if-no-files-found: error}
+
+  android:
+    runs-on: ubuntu-latest
+    env:
+      SEALOADER_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
+      SEALOADER_VERSION_CODE: ${{ github.run_number }}
+      SEALOADER_STORE_FILE: keystore/release.jks
+      SEALOADER_STORE_PASSWORD: ${{ secrets.SEALOADER_STORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - name: Chave de assinatura
+        env: {KEYSTORE_B64: '${{ secrets.SEALOADER_KEYSTORE_B64 }}'}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "Falta o secret SEALOADER_KEYSTORE_B64 (veja o README)"; exit 1; }
+          mkdir -p android/keystore && echo "$KEYSTORE_B64" | base64 -d > android/keystore/release.jks
+      - name: Build
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+      - run: mkdir -p dist && cp android/app/build/outputs/apk/release/app-release.apk dist/Sealoader-Android.apk
+      - uses: actions/upload-artifact@v4
+        with: {name: android, path: 'dist/*', if-no-files-found: error}
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {path: dist, merge-multiple: true}
+      - name: Publicar release
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          ls -la dist
+          gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" \
+            --title "Sealoader ${{ github.ref_name }}" --notes "Baixe o app do seu sistema abaixo. Instruções no README." \
+          || gh release upload "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" --clobber

@@ -3,6 +3,11 @@
 # Uso:  ./scripts/install-server.sh        (rode de dentro do repositório clonado)
 # Reaproveita o config.json se ele existir (copie do computador antigo para manter a mesma senha).
 set -euo pipefail
+case "$(uname -m)" in
+  x86_64) CF_ARCH=amd64; DENO_ARCH=x86_64 ;;
+  aarch64|arm64) CF_ARCH=arm64; DENO_ARCH=aarch64 ;;   # Raspberry Pi 4/5 com sistema 64 bits
+  *) echo "Arquitetura $(uname -m) não suportada"; exit 1 ;;
+esac
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
@@ -18,12 +23,12 @@ venv/bin/python -m pip install -q -U -r requirements.txt
 echo "→ Runtime JavaScript para o YouTube (deno)"
 mkdir -p bin
 if ! command -v deno >/dev/null && [ ! -x bin/deno ]; then
-  curl -sfL -o /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
+  curl -sfL -o /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-${DENO_ARCH}-unknown-linux-gnu.zip
   python3 -c "import zipfile;zipfile.ZipFile('/tmp/deno.zip').extractall('bin')"; chmod +x bin/deno; rm /tmp/deno.zip
 fi
 
 echo "→ cloudflared"
-[ -x bin/cloudflared ] || { curl -sfL -o bin/cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64; chmod +x bin/cloudflared; }
+[ -x bin/cloudflared ] || { curl -sfL -o bin/cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}; chmod +x bin/cloudflared; }
 
 echo "→ Configuração (senha, GitHub)"
 venv/bin/python - <<PY
@@ -32,6 +37,7 @@ p = 'config.json'
 cfg = json.load(open(p)) if os.path.exists(p) else {}
 cfg.setdefault('github_repo', 'opaulovina/sealoader')
 cfg.setdefault('pages_url', 'https://opaulovina.github.io/sealoader/')
+cfg.setdefault('publish_backend', True)
 if not cfg.get('github_token'):
     try:
         cfg['github_token'] = subprocess.check_output(['gh', 'auth', 'token'], text=True).strip()
