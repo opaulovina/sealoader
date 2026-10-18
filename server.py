@@ -27,7 +27,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from flask import Flask, Response, abort, jsonify, request, send_file, send_from_directory
+from flask import Flask, Response, abort, g, jsonify, request, send_file, send_from_directory
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 import yt_dlp
@@ -70,6 +70,7 @@ def load_config():
 CONFIG = load_config()
 SIGNER = URLSafeTimedSerializer(CONFIG['secret'], salt='sealoader-auth')
 TOKEN_AGE = 365 * 24 * 3600
+TOKEN_RENEW = 24 * 3600  # tokens older than this get a fresh one, so the year counts from the last use
 FAILS = {}
 LAST_PING = [time.time()]
 
@@ -85,11 +86,17 @@ def password_tag():
     return hashlib.sha256(CONFIG['password'].lower().encode()).hexdigest()[:16]
 
 
-def token_ok(tok):
+def new_token():
+    return SIGNER.dumps({'p': password_tag()})
+
+
+def token_issued(tok):
+    """When a valid token was issued, or None."""
     try:
-        return SIGNER.loads(tok, max_age=TOKEN_AGE).get('p') == password_tag()
+        data, issued = SIGNER.loads(tok, max_age=TOKEN_AGE, return_timestamp=True)
+        return issued.timestamp() if data.get('p') == password_tag() else None
     except (BadSignature, AttributeError):
-        return False
+        return None
 
 
 # ---------------------------------------------------------------- access
@@ -119,8 +126,11 @@ def guard():
         return None
     auth = request.headers.get('Authorization', '')
     tok = auth[7:] if auth.startswith('Bearer ') else request.args.get('t', '')
-    if not token_ok(tok):
+    issued = token_issued(tok)
+    if issued is None:
         return jsonify(error='Faça login novamente', login=True), 401
+    if time.time() - issued > TOKEN_RENEW:
+        g.renewed_token = new_token()
     return None
 
 
@@ -132,12 +142,14 @@ def headers(resp):
             'Access-Control-Allow-Origin': origin,
             'Access-Control-Allow-Headers': 'Authorization, Content-Type',
             'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Expose-Headers': 'Content-Disposition',
+            'Access-Control-Expose-Headers': 'Content-Disposition, X-Sealoader-Token',
             'Access-Control-Max-Age': '86400',
             'Vary': 'Origin',
         })
     if not request.path.startswith('/api/'):
         resp.headers['Cache-Control'] = 'no-cache'
+    if g.get('renewed_token'):
+        resp.headers['X-Sealoader-Token'] = g.renewed_token
     return resp
 
 
@@ -150,7 +162,7 @@ def api_login():
     pw = str((request.get_json(silent=True) or {}).get('password', '')).strip().lower()
     if hmac.compare_digest(pw.encode(), CONFIG['password'].lower().encode()):
         FAILS.pop(ip, None)
-        return jsonify(ok=True, token=SIGNER.dumps({'p': password_tag()}))
+        return jsonify(ok=True, token=new_token())
     FAILS[ip] = (fails + 1, time.time() if fails == 0 or time.time() - since >= 300 else since)
     time.sleep(1)
     return jsonify(error='Senha incorreta'), 403

@@ -559,6 +559,8 @@ function api(path, opts = {}, retried){
     throw err;
   }).then(r => {
     if(r.status === 401){ showLogin(); throw new Error('Digite a senha para continuar'); }
+    const renewed = r.headers.get('X-Sealoader-Token');  // the server extends the login on each use
+    if(renewed){ TOKEN = renewed; store.set('token', TOKEN); if(ANDROID && ANDROID.setToken) ANDROID.setToken(TOKEN); }
     return r;
   });
 }
