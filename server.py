@@ -26,6 +26,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import zipfile
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, Response, abort, g, jsonify, request, send_file, send_from_directory
 from itsdangerous import BadSignature, URLSafeTimedSerializer
@@ -366,6 +368,199 @@ def first_entry(info):
     return info
 
 
+# ---------------------------------------------------------------- playlists
+# YouTube (e qualquer site que o yt-dlp lista) vem do próprio yt-dlp. Spotify
+# e Deezer têm DRM: lemos a lista de faixas (sem chave de API) e cada faixa
+# é procurada no YouTube por "artista - título", escolhendo a de duração
+# mais parecida. Tudo vai num .zip.
+MAX_PLAYLIST = 500
+PLAYLIST_WORKERS = 3
+SPOTIFY_RE = re.compile(r'open\.spotify\.com/(?:intl-[a-z-]+/)?(?:embed/)?(playlist|album)/([A-Za-z0-9]+)')
+DEEZER_RE = re.compile(r'deezer\.com/(?:[a-z]{2}/)?(playlist|album)/(\d+)')
+# Só esses links são lidos como lista (ler a lista de um vídeo único
+# dobraria o tempo de "Buscar").
+LISTA_RE = re.compile(r'[?&]list=|/playlist|/sets/|/album/', re.I)
+DEEZER_SHORT_RE = re.compile(r'^https?://(link\.deezer\.com|deezer\.page\.link)/', re.I)
+
+
+def fetch(url, accept_json=False, timeout=20):
+    req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8'})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        body = resp.read(8 * 1024 * 1024).decode('utf-8', 'replace')
+        return (json.loads(body) if accept_json else body), resp.geturl()
+
+
+def spotify_list(kind, sid):
+    page, _ = fetch(f'https://open.spotify.com/embed/{kind}/{sid}')
+    m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', page, re.S)
+    if not m:
+        raise RuntimeError('Não consegui ler esta playlist do Spotify (ela é pública?)')
+    ent = json.loads(m.group(1))['props']['pageProps']['state']['data']['entity']
+    cover = ((ent.get('coverArt') or {}).get('sources') or [{}])
+    tracks = [{
+        'title': t.get('title') or '',
+        'artist': (t.get('subtitle') or '').replace('\xa0', ' '),
+        'duration': round((t.get('duration') or 0) / 1000) or None,
+    } for t in ent.get('trackList') or [] if t.get('title')]
+    thumb = (max(cover, key=lambda c: c.get('width') or 0) or {}).get('url')
+    if not thumb:  # álbum: a página não traz a capa; o oEmbed traz
+        try:
+            thumb = fetch(f'https://open.spotify.com/oembed?url=https://open.spotify.com/{kind}/{sid}', accept_json=True)[0].get('thumbnail_url')
+        except Exception:  # noqa: BLE001
+            thumb = None
+    return {'source': 'spotify', 'title': ent.get('name') or ent.get('title') or 'Spotify',
+            'uploader': ent.get('subtitle') if kind == 'album' else None,
+            'thumbnail': thumb, 'tracks': tracks}
+
+
+def deezer_list(kind, did):
+    meta, _ = fetch(f'https://api.deezer.com/{kind}/{did}', accept_json=True)
+    if meta.get('error'):
+        raise RuntimeError('Não encontrei esta playlist no Deezer (ela é pública?)')
+    tracks, nxt = [], f'https://api.deezer.com/{kind}/{did}/tracks?limit=100'
+    while nxt and len(tracks) < MAX_PLAYLIST:
+        page, _ = fetch(nxt, accept_json=True)
+        for t in page.get('data') or []:
+            tracks.append({'title': t.get('title') or '', 'artist': (t.get('artist') or {}).get('name') or '',
+                           'duration': t.get('duration') or None})
+        nxt = page.get('next')
+    return {'source': 'deezer', 'title': meta.get('title') or 'Deezer',
+            'uploader': (meta.get('artist') or {}).get('name') if kind == 'album' else (meta.get('creator') or {}).get('name'),
+            'thumbnail': meta.get('picture_xl') or meta.get('cover_xl') or meta.get('picture_big') or meta.get('cover_big'),
+            'tracks': tracks}
+
+
+def music_list(url):
+    """Spotify/Deezer: a lista de faixas, ou None se o link não é deles."""
+    if DEEZER_SHORT_RE.match(url):
+        _, url = fetch(url)  # o link curto redireciona para o deezer.com
+    m = SPOTIFY_RE.search(url)
+    if m:
+        return spotify_list(*m.groups())
+    m = DEEZER_RE.search(url)
+    if m:
+        return deezer_list(*m.groups())
+    if re.search(r'(spotify\.com|deezer\.com)/', url):
+        raise RuntimeError('Do Spotify e do Deezer baixamos playlists e álbuns. Cole o link de uma playlist ou de um álbum.')
+    return None
+
+
+def ydl_list(url, cookies=None):
+    """Playlist de um site do yt-dlp (lista rasa, sem abrir cada vídeo), ou
+    None se o link é de um vídeo só. No YouTube, watch?v=…&list=… também
+    vale: a playlist inteira fica como opção."""
+    m = re.search(r'[?&]list=([\w-]+)', url)
+    if m and re.search(r'(youtube\.com|youtu\.be)', url):
+        url = f'https://www.youtube.com/playlist?list={m.group(1)}'
+    opts = base_opts(cookies)
+    opts.update(noplaylist=False, extract_flat='in_playlist', playlistend=MAX_PLAYLIST)
+    with make_ydl(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    if not info or info.get('_type') != 'playlist':
+        return None
+    entries = [e for e in (info.get('entries') or []) if e and (e.get('url') or e.get('webpage_url'))]
+    if len(entries) < 2:
+        return None
+    thumbs = info.get('thumbnails') or (entries[0].get('thumbnails') or [])
+    return {'source': (info.get('extractor_key') or '').lower(), 'title': info.get('title') or 'Playlist',
+            'uploader': info.get('uploader') or info.get('channel'),
+            'thumbnail': thumbs[-1].get('url') if thumbs else None,
+            'tracks': [{'title': e.get('title') or e.get('id') or '', 'url': e.get('url') or e.get('webpage_url'),
+                        'duration': e.get('duration')} for e in entries]}
+
+
+def playlist_summary(pl):
+    return {'title': pl['title'], 'uploader': pl.get('uploader'), 'thumbnail': pl.get('thumbnail'),
+            'count': len(pl['tracks']), 'source': pl['source'], 'music': pl['source'] in ('spotify', 'deezer'),
+            'duration': sum(t.get('duration') or 0 for t in pl['tracks']) or None,
+            'tracks': [{'title': t['title'], 'artist': t.get('artist')} for t in pl['tracks'][:MAX_PLAYLIST]]}
+
+
+def safe_name(name, limit=120):
+    name = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', ' ', name or '').strip(' .')
+    return re.sub(r'\s+', ' ', name)[:limit].strip(' .') or 'playlist'
+
+
+def find_on_youtube(ydl, track):
+    """A faixa do Spotify/Deezer no YouTube: das 5 primeiras da busca, a de
+    duração mais perto (até 25 s de diferença; senão, a primeira)."""
+    q = f"{track.get('artist') or ''} - {track['title']}".strip(' -')
+    res = ydl.extract_info(f'ytsearch5:{q}', download=False, process=False)
+    entries = [e for e in (res.get('entries') or []) if e and e.get('id')]
+    if not entries:
+        return None
+    best = entries[0]
+    if track.get('duration'):
+        perto = [e for e in entries if e.get('duration') and abs(e['duration'] - track['duration']) <= 25]
+        if perto:
+            best = min(perto, key=lambda e: abs(e['duration'] - track['duration']))
+    return f"https://www.youtube.com/watch?v={best['id']}"
+
+
+def run_playlist(job_id, data, pl):
+    job = JOBS[job_id]
+    outdir = os.path.join(WORK, job_id)
+    os.makedirs(outdir, exist_ok=True)
+    tracks = pl['tracks'][:MAX_PLAYLIST]
+    total = len(tracks)
+    music = pl['source'] in ('spotify', 'deezer')
+    fmt = build_format({**data, 'kind': 'audio'} if music and data.get('kind') != 'audio' else data)
+    width = max(2, len(str(total)))
+    lock = threading.Lock()
+    job.update(stage='playlist', total_tracks=total, done_tracks=0, failed=[], current='')
+
+    def one(i, track):
+        if job.get('cancel'):
+            return
+        name = f"{i:0{width}d} - " + safe_name(f"{track['artist']} - {track['title']}" if music and track.get('artist') else track['title'], 100)
+        with lock:
+            job['current'] = track['title']
+        opts = base_opts(data.get('cookies'))
+        opts.update(fmt)
+        opts.update({'outtmpl': os.path.join(outdir, name + '.%(ext)s'), 'concurrent_fragment_downloads': 4, 'noprogress': True,
+                     'windowsfilenames': True, 'noplaylist': True})
+        try:
+            with make_ydl(opts) as ydl:
+                url = find_on_youtube(ydl, track) if music else track['url']
+                if not url:
+                    raise RuntimeError('não achei no YouTube')
+                info = ydl.extract_info(url, download=False)
+                if music:
+                    # O arquivo leva o nome e a etiqueta da faixa original.
+                    info.update(title=track['title'], track=track['title'], artist=track['artist'],
+                                artists=[track['artist']], creators=[track['artist']], album=pl['title'], track_number=i)
+                ydl.process_ie_result(info, download=True)
+        except Exception as e:  # noqa: BLE001
+            with lock:
+                job['failed'].append(f"{track.get('artist') + ' - ' if track.get('artist') else ''}{track['title']}: {clean_error(e).splitlines()[0]}")
+        with lock:
+            job['done_tracks'] += 1
+            job['percent'] = round(job['done_tracks'] / total * 100, 1)
+
+    try:
+        with ThreadPoolExecutor(PLAYLIST_WORKERS) as pool:
+            list(pool.map(lambda a: one(*a), enumerate(tracks, 1)))
+        files = sorted(f for f in glob.glob(os.path.join(outdir, '*'))
+                       if os.path.isfile(f) and not f.endswith(('.part', '.ytdl', '.zip')) and '.temp.' not in f
+                       and not re.search(r'\.f\d+\.\w+$', f))
+        if not files:
+            raise RuntimeError('Nenhuma faixa da playlist pôde ser baixada')
+        job.update(stage='zip', label='Criando a pasta zipada')
+        zname = safe_name(pl['title']) + '.zip'
+        zpath = os.path.join(outdir, zname)
+        # Áudio e vídeo já vêm comprimidos: guardar sem recomprimir é rápido.
+        with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_STORED, allowZip64=True) as z:
+            for f in files:
+                z.write(f, os.path.basename(f))
+                os.remove(f)
+            if job['failed']:
+                z.writestr('Não baixadas.txt', '\n'.join(job['failed']) + '\n')
+        job.update(status='done', stage='done', percent=100, file=zpath, filename=zname,
+                   size=os.path.getsize(zpath), ok_tracks=len(files))
+    except Exception as e:  # noqa: BLE001
+        job.update(status='error', error=clean_error(e))
+
+
 def json_body():
     # silent + no force: a cross-site text/plain POST (no CORS preflight) gets nothing
     data = request.get_json(silent=True)
@@ -381,9 +576,28 @@ def api_info():
     if not re.match(r'^https?://', url):
         return jsonify(error='Cole um link válido (começando com http:// ou https://)'), 400
     try:
+        pl = music_list(url)
+        if pl is not None:
+            if not pl['tracks']:
+                raise RuntimeError('Esta playlist está vazia')
+            # Música: só áudio, sem formatos para escolher.
+            return jsonify({**playlist_summary(pl), 'playlist': playlist_summary(pl), 'heights': [], 'raw': [],
+                            'extractor': pl['source'], 'only_playlist': True})
+        pl = None
+        if LISTA_RE.search(url):
+            try:
+                pl = ydl_list(url, data.get('cookies'))
+            except Exception:  # noqa: BLE001
+                pl = None  # sem lista: segue como vídeo
+        target = pl['tracks'][0]['url'] if pl and not re.search(r'[?&]v=|youtu\.be/', url) else url
         with make_ydl(base_opts(data.get('cookies'))) as ydl:
-            info = first_entry(ydl.extract_info(url, download=False))
-        return jsonify(summarize(info))
+            info = first_entry(ydl.extract_info(target, download=False))
+        out = summarize(info)
+        if pl:
+            out['playlist'] = playlist_summary(pl)
+            # Link de playlist (sem um vídeo escolhido): abre já na playlist.
+            out['only_playlist'] = target != url
+        return jsonify(out)
     except Exception as e:  # noqa: BLE001
         return jsonify(error=clean_error(e)), 422
 
@@ -476,7 +690,18 @@ def api_download():
         return jsonify(error='Link inválido'), 400
     job_id = uuid.uuid4().hex[:12]
     JOBS[job_id] = {'status': 'running', 'stage': 'start', 'percent': 0, 'parts': 0, 'created': time.time()}
-    threading.Thread(target=run_job, args=(job_id, data), daemon=True).start()
+    if data.get('playlist'):
+        def start():
+            try:
+                pl = music_list(data['url']) or ydl_list(data['url'], data.get('cookies'))
+                if not pl:
+                    raise RuntimeError('Este link não é de uma playlist')
+                run_playlist(job_id, data, pl)
+            except Exception as e:  # noqa: BLE001
+                JOBS[job_id].update(status='error', error=clean_error(e))
+        threading.Thread(target=start, daemon=True).start()
+    else:
+        threading.Thread(target=run_job, args=(job_id, data), daemon=True).start()
     return jsonify(job=job_id)
 
 

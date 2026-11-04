@@ -195,6 +195,7 @@ systemctl --user start sealoader
 - **Interface:** tudo em `web/index.html`. As cores ficam nos tokens `--pink-*`, `--blue-*`, `--coral-*`, `--mint-*`, `--sun-*` e `--frost-*`. O material de vidro é a classe `.glass` (granulado em `.glass::after`, intensidade no `opacity`). A variante `.flat` tem sombra menor.
 - **Novos sites:** quase sempre o yt-dlp já suporta. Para um site que ele não conhece, siga o exemplo de `TokyVideoIE` em `server.py` e registre-o em `make_ydl()`.
 - **Formatos de download:** veja `build_format()` em `server.py`.
+- **Playlists (pasta zipada):** o link de playlist do YouTube (ou `watch?v=…&list=…`, que mostra "Este vídeo · Playlist inteira") e de playlist/álbum do **Spotify** e do **Deezer** baixa tudo num `.zip` (`run_playlist`, 3 de cada vez, até 500 itens; o que falhar vai em `Não baixadas.txt` dentro do zip). Spotify e Deezer têm DRM: a lista de faixas vem sem chave de API (Spotify pela página de incorporação, que traz **até 100 faixas**; Deezer pela API pública) e cada faixa é procurada no YouTube por "artista - título", ficando com a de duração mais parecida (`find_on_youtube`). Saem só em áudio, com título, artista, álbum e número da faixa gravados no arquivo. Só links que parecem lista (`LISTA_RE`) são lidos como playlist, para não dobrar o tempo de "Buscar" de um vídeo único.
 - **Android:** o APK embute a pasta `web/` (veja `assets.srcDirs` em `android/app/build.gradle`). Mudou a interface? Gere um APK novo, ou use o site, que atualiza sozinho.
 
 ## Como funciona por dentro

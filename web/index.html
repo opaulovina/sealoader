@@ -128,6 +128,11 @@ section[hidden]{display:none}
 .raw tr:hover td{background:rgba(171,193,251,.18)}
 .raw tr.sel td{background:rgba(171,193,251,.38)}
 .raw td:first-child{border-radius:12px 0 0 12px}.raw td:last-child{border-radius:0 12px 12px 0}
+.tracks{max-height:240px;overflow:auto;border-radius:24px;background:rgba(255,255,255,.55);padding:8px 6px;margin:0;list-style:none;counter-reset:t}
+.tracks li{counter-increment:t;display:flex;gap:10px;align-items:baseline;padding:6px 10px;font-size:14px;line-height:1.35}
+.tracks li::before{content:counter(t);color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:1.6em;text-align:right;font-size:13px}
+.tracks li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tracks li small{color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
 
 .big{border:0;width:100%;margin-top:34px;min-height:76px;border-radius:999px;font-size:22px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;padding:12px 24px}
 .big .ms{font-size:30px}
@@ -350,11 +355,25 @@ body.is-desktop .apps>.app-links,body.is-desktop .apps>.label,body.is-android .a
           </div>
         </div>
 
+        <div id="scopeWrap" hidden>
+          <div class="label">Baixar</div>
+          <div class="seg glass blue flat" id="scopeSeg">
+            <button type="button" data-scope="one" aria-pressed="true"><span class="ms">movie</span>Este vídeo</button>
+            <button type="button" data-scope="all" aria-pressed="false"><span class="ms">queue_music</span><span id="scopeAll">Playlist inteira</span></button>
+          </div>
+        </div>
+        <div id="tracksWrap" hidden>
+          <div class="label" id="tracksLabel">Faixas</div>
+          <ol class="tracks" id="tracks"></ol>
+        </div>
+
+        <div id="kindWrap">
         <div class="label">Formato</div>
         <div class="seg glass pink flat" id="kindSeg">
           <button type="button" data-kind="video" aria-pressed="true"><span class="ms">movie</span>Vídeo</button>
           <button type="button" data-kind="audio" aria-pressed="false"><span class="ms">music_note</span>Só áudio</button>
           <button type="button" data-kind="raw" aria-pressed="false"><span class="ms">list</span>Todos os formatos</button>
+        </div>
         </div>
 
         <div id="pane-video">
@@ -620,9 +639,11 @@ const PLATFORMS = [
   {k:'telegram', n:'Telegram',  re:/(t\.me|telegram\.(me|org))/i},
   {k:'tokyvideo',n:'TokyVideo', re:/tokyvideo\.com/i},
   {k:'vk',       n:'VK Video',  re:/(vk\.com|vkvideo\.ru|vk\.ru)\//i},
+  {k:'spotify',  n:'Spotify',   re:/spotify\.com/i},
+  {k:'deezer',   n:'Deezer',    re:/(deezer\.com|deezer\.page\.link)/i},
 ];
 $('#platforms').innerHTML = 'Funciona com ' + PLATFORMS.map(p => `<span class="pf" data-k="${p.k}">${p.n}</span>`).join(' · ')
-  + ` e <span class="pf" data-k="other">mais de 1.800 sites</span>`;
+  + ` e <span class="pf" data-k="other">mais de 1.800 sites</span>. Playlists do YouTube, Spotify e Deezer saem numa pasta zipada`;
 function detect(u){ const p = PLATFORMS.find(p => p.re.test(u)); return p ? p.k : (/^https?:\/\//.test(u) ? 'other' : null); }
 function markPlatform(){
   const k = detect($('#url').value.trim());
@@ -637,7 +658,8 @@ $('#pasteBtn').onclick = async () => {
 };
 $('#url').addEventListener('paste', () => setTimeout(() => { markPlatform(); if(/^https?:\/\/\S+$/.test($('#url').value.trim())) fetchInfo(); }, 0));
 
-let info = null, sel = {kind:'video', height:0, container:'mp4', audio:'mp3', bitrate:'320', format_id:null}, busy = false;
+let info = null, sel = {kind:'video', height:0, container:'mp4', audio:'mp3', bitrate:'320', format_id:null, all:false}, busy = false;
+const isAll = () => !!(info && info.playlist && sel.all);
 
 function showError(msg){
   $('#errBox').innerHTML = msg ? `<div class="err glass sun flat"><span class="ms">error</span><div>${esc(msg)}</div></div>` : '';
@@ -673,18 +695,11 @@ const resName = h => h >= 4320 ? '8K' : h >= 2160 ? '4K' : h >= 1440 ? '2K' : h 
 
 function renderInfo(){
   $('#result').hidden = false; $('#prog').hidden = true; $('#dlBtn').hidden = false;
-  $('#thumb').src = info.thumbnail ? apiUrl('/api/thumb?u='+encodeURIComponent(info.thumbnail)) : '';
-  $('#thumb').style.visibility = info.thumbnail ? 'visible' : 'hidden';
-  $('#title').textContent = info.title;
-  const plat = PLATFORMS.find(p => info.extractor.includes(p.k));
-  $('#meta').innerHTML = [
-    plat && `<span><span class="ms">public</span>${plat.n}</span>`,
-    info.uploader && `<span><span class="ms">person</span>${esc(info.uploader)}</span>`,
-    info.duration && `<span><span class="ms">schedule</span>${fmtDur(info.duration)}</span>`,
-  ].filter(Boolean).join('');
+  sel.all = !!(info.playlist && info.only_playlist);
   sel.height = info.heights[0] ? info.heights[0].height : 0;
   sel.format_id = null;
-  setKind(info.heights.length ? 'video' : 'audio');
+  setKind(info.heights.length && !(info.playlist && info.playlist.music) ? 'video' : 'audio');
+  renderScope();
   renderOpts();
   const rows = info.raw.slice().reverse();
   $('#rawTable').innerHTML = '<tbody>' + rows.map(f => `<tr data-id="${esc(f.id)}"><td><b>${esc(f.id)}</b></td><td>${esc(f.ext)}</td><td>${esc(f.res)}</td><td>${esc(f.note)}</td><td>${f.vcodec && f.vcodec !== 'none' ? esc(f.vcodec.split('.')[0]) : ''}${f.acodec && f.acodec !== 'none' && f.vcodec !== 'none' && f.vcodec ? ' + ' : ''}${f.acodec && f.acodec !== 'none' ? esc(f.acodec.split('.')[0]) : ''}</td><td>${fmtSize(f.size)}</td></tr>`).join('') + '</tbody>';
@@ -694,6 +709,42 @@ function renderInfo(){
   });
   updateLabel();
 }
+
+// Cabeçalho, escolha "Este vídeo · Playlist inteira" e a lista de faixas.
+function renderScope(){
+  const pl = info.playlist, all = isAll(), src = all ? pl : info;
+  const thumb = src.thumbnail || info.thumbnail;
+  $('#thumb').src = thumb ? apiUrl('/api/thumb?u='+encodeURIComponent(thumb)) : '';
+  $('#thumb').style.visibility = thumb ? 'visible' : 'hidden';
+  $('#title').textContent = src.title;
+  const plat = PLATFORMS.find(p => (all ? pl.source : info.extractor).includes(p.k));
+  $('#meta').innerHTML = [
+    plat && `<span><span class="ms">public</span>${plat.n}</span>`,
+    all && `<span><span class="ms">queue_music</span>${pl.count} ${pl.music ? 'músicas' : 'vídeos'}</span>`,
+    src.uploader && `<span><span class="ms">person</span>${esc(src.uploader)}</span>`,
+    src.duration && `<span><span class="ms">schedule</span>${fmtDur(src.duration)}</span>`,
+  ].filter(Boolean).join('');
+  $('#scopeWrap').hidden = !pl || info.only_playlist;
+  if(pl) $('#scopeAll').textContent = `Playlist inteira (${pl.count})`;
+  document.querySelectorAll('#scopeSeg button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.scope === 'all') === all));
+  $('#tracksWrap').hidden = !all;
+  if(all){
+    $('#tracksLabel').textContent = pl.music ? 'Músicas' : 'Vídeos';
+    $('#tracks').innerHTML = pl.tracks.map(t => `<li><span>${esc(t.title)}</span>${t.artist ? `<small>${esc(t.artist)}</small>` : ''}</li>`).join('');
+    if(pl.music) setKind('audio');
+    if(sel.kind === 'raw') setKind('video');
+    // Playlist inteira em 4K enche o disco: começa no 1080p (dá para subir).
+    const ate1080 = info.heights.find(h => h.height <= 1080);
+    if(ate1080 && sel.height > 1080){ sel.height = ate1080.height; renderOpts(); }
+  }
+  // Música do Spotify/Deezer é só áudio; a playlist não tem "Todos os formatos".
+  const music = all && pl.music;
+  $('#kindWrap').hidden = music;
+  document.querySelector('#kindSeg [data-kind="video"]').hidden = music || !info.heights.length;
+  document.querySelector('#kindSeg [data-kind="raw"]').hidden = all;
+  updateLabel();
+}
+document.querySelectorAll('#scopeSeg button').forEach(b => b.onclick = () => { sel.all = b.dataset.scope === 'all'; renderScope(); });
 
 function renderOpts(){
   $('#resOpts').innerHTML = info.heights.map(h => opt(resName(h.short ?? h.height), [h.fps > 30 ? Math.round(h.fps)+'fps' : '', fmtSize(h.size) && '~'+fmtSize(h.size)].filter(Boolean).join(' · '), h.height === sel.height, {h:h.height})).join('');
@@ -725,6 +776,8 @@ function updateLabel(){
   } else {
     t = sel.format_id ? `Baixar <small>formato ${esc(sel.format_id)}</small>` : 'Escolha um formato na lista';
   }
+  if(isAll()) t = t.replace(/ · ~[^<]*<\/small>/, '</small>').replace(/^Baixar( áudio)?/, 'Baixar playlist')
+    .replace('</small>', ` · ${info.playlist.count} ${info.playlist.music ? 'músicas' : 'vídeos'} · ZIP</small>`);
   $('#dlLabel').innerHTML = t;
   $('#dlBtn').disabled = busy || (sel.kind === 'raw' && !sel.format_id);
 }
@@ -732,14 +785,14 @@ function updateLabel(){
 $('#dlBtn').onclick = async () => {
   if(busy) return;
   busy = true; updateLabel(); showError('');
-  const body = {url:info.url, kind:sel.kind, height:sel.height, container:sel.container, audio:sel.audio, bitrate:sel.bitrate, format_id:sel.format_id, cookies:store.get('cookies','')};
+  const body = {url:info.url, kind:sel.kind, height:sel.height, container:sel.container, audio:sel.audio, bitrate:sel.bitrate, format_id:sel.format_id, playlist:isAll(), cookies:store.get('cookies','')};
   $('#dlBtn').hidden = true; $('#prog').hidden = false;
   setProg(0, 'Preparando…', 'Conectando ao site', 'downloading');
   try{
     const r = await api('/api/download', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
     const {job, error} = await r.json();
     if(error) throw new Error(error);
-    await poll(job, info.title);
+    await poll(job, isAll() ? info.playlist.title : info.title);
   }catch(err){ if($('#loginVeil').hidden) showError(err.message === 'Failed to fetch' ? OFFLINE_MSG : err.message); $('#prog').hidden = true; $('#dlBtn').hidden = false; }
   finally{ busy = false; updateLabel(); }
 };
@@ -761,10 +814,16 @@ function poll(job, title){
       if(j.status === 'done'){
         setProg(100, 'Pronto!', `${j.filename} · ${fmtSize(j.size)}`, 'check_circle');
         saveFile(job); addHistory(job, j.filename, j.size);
+        if(j.failed && j.failed.length) showError(`${j.failed.length === 1 ? '1 item não pôde' : j.failed.length + ' itens não puderam'} ser baixado${j.failed.length === 1 ? '' : 's'} (a lista vai no zip, em "Não baixadas.txt"):\n` + j.failed.slice(0, 8).join('\n') + (j.failed.length > 8 ? '\n…' : ''));
         setTimeout(() => { $('#prog').hidden = true; $('#dlBtn').hidden = false; }, 2600);
         return resolve();
       }
-      if(j.stage === 'process') setProg(99, j.label || 'Processando…', 'Quase lá, isso pode levar alguns segundos', 'progress_activity');
+      if(j.stage === 'playlist'){
+        const n = Math.min(j.done_tracks + 1, j.total_tracks);
+        setProg(j.percent || 0, `Baixando ${n} de ${j.total_tracks}`, [j.current, j.failed && j.failed.length ? `${j.failed.length} com erro` : ''].filter(Boolean).join(' · '), 'downloading');
+      }
+      else if(j.stage === 'zip') setProg(99, j.label || 'Criando a pasta zipada', 'Quase lá', 'progress_activity');
+      else if(j.stage === 'process') setProg(99, j.label || 'Processando…', 'Quase lá, isso pode levar alguns segundos', 'progress_activity');
       else if(j.stage === 'download'){
         const sp = j.speed ? fmtSize(j.speed)+'/s' : '';
         const eta = j.eta != null ? 'faltam '+fmtDur(j.eta) : '';
