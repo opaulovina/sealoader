@@ -612,8 +612,8 @@ $('#cookieSel').onchange = e => { store.set('cookies', e.target.value); toast(e.
   if(!sh) return;
   if(!sh.url){ $('#shareOff').hidden = false; return; }
   $('#share').hidden = false; $('#shareUrl').textContent = sh.url; $('#sharePw').textContent = sh.password;
-  new QRCodeStyling({width:150, height:150, type:'svg', data:sh.url, margin:0, qrOptions:{errorCorrectionLevel:'M'},
-    dotsOptions:{type:'rounded', color:'#2f4786'}, cornersSquareOptions:{type:'extra-rounded', color:'#6e2d85'}, cornersDotOptions:{type:'dot', color:'#6e2d85'}}).append($('#shareQr'));
+  qrSvg({width:150, height:150, type:'svg', data:sh.url, margin:0, qrOptions:{errorCorrectionLevel:'M'},
+    dotsOptions:{type:'rounded', color:'#2f4786'}, cornersSquareOptions:{type:'extra-rounded', color:'#6e2d85'}, cornersDotOptions:{type:'dot', color:'#6e2d85'}}).then(svg => $('#shareQr').innerHTML = svg);
   const copy = async (t, msg) => { try{ await navigator.clipboard.writeText(t); toast(msg); }catch{ toast('Não deu para copiar', 'error'); } };
   document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy($('#'+b.dataset.copy).textContent, 'Copiado'));
   $('#shareMsg').onclick = () => copy(`Oi! Use o Sealoader pra baixar vídeos do YouTube, Instagram, TikTok, X e Telegram e criar QR codes 💜\n\n🔗 ${sh.url}\n🔑 Senha: ${sh.password}\n\n💻 No computador: no fim da página tem o app para Windows, Mac e Linux (funciona sozinho, sem senha).\n📱 Android: instale o app pelo mesmo link.\n🍎 iPhone: abra o link no Safari → Compartilhar → Adicionar à Tela de Início.`, 'Convite copiado');
@@ -914,10 +914,27 @@ function qrOptions(size){
 }
 
 const PREV = 262;
-function renderQR(){
+// qr-code-styling gives every QR the same ids (clip-path-dot-color…): with two QRs on the
+// page (the share one + the preview) the preview clipped with the other's paths and came out
+// as a black square. Each SVG gets its own id prefix.
+let qrSeq = 0;
+async function qrSvg(opts){
+  const n = ++qrSeq;
+  const txt = await (await new QRCodeStyling(opts).getRawData('svg')).text();
+  return txt.replace(/<\?xml[^>]*>/, '')
+    .replace(/\bid="([^"]+)"/g, `id="q${n}-$1"`)
+    .replace(/url\(\s*['"]?#([^)'"\s]+)['"]?\s*\)/g, `url(#q${n}-$1)`)
+    .replace(/(xlink:href|href)="#([^"]+)"/g, `$1="#q${n}-$2"`);
+}
+
+let qrRender = 0;
+async function renderQR(){
   // a fresh instance each time: update() deep-merges and would keep stale gradients/images
-  $('#qrBox').replaceChildren();
-  new QRCodeStyling({...qrOptions(PREV), type:'svg'}).append($('#qrBox'));
+  const me = ++qrRender;
+  let svg;
+  try{ svg = await qrSvg({...qrOptions(PREV), type:'svg'}); }catch(e){ console.error(e); return; }
+  if(me !== qrRender) return; // a newer render already started
+  $('#qrBox').innerHTML = svg;
   $('#qrBox').classList.toggle('checker', qrState.custom && qrState.trans);
   const empty = !qrData(); $('#qrBox').classList.toggle('empty', empty);
   let hint = $('#qrBox .hint'); if(empty && !hint){ hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Preencha o conteúdo para gerar o QR code'; $('#qrBox').appendChild(hint); } else if(!empty && hint) hint.remove();
