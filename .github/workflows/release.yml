@@ -16,7 +16,7 @@ jobs:
         include:
           - {os: ubuntu-22.04, name: linux}
           - {os: windows-latest, name: windows}
-          - {os: macos-14, name: mac-arm64}
+          - {os: macos-15, name: mac-arm64}
           - {os: macos-15-intel, name: mac-intel}
     runs-on: ${{ matrix.os }}
     env:
